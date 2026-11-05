@@ -3666,6 +3666,7 @@ addEventListener('blur', () => keys.clear());
 // --- buttons + hint
 document.getElementById('home').addEventListener('click', () => { if (DOLL.on) setDoll(false); player.pos.copy(START.pos); player.vel.set(0, 0, 0); player.yaw = START.yaw; player.pitch = START.pitch; });
 const fullBtn = document.getElementById('full'), root = document.documentElement;
+if (P.get('embed') === '1') fullBtn.style.display = 'none';   // the campaign page puts the whole tour in full screen itself
 const openTab = () => { const w = window.open(location.href, '_blank'); toast(w ? 'Opened in its own tab. Tap full screen there.' : 'On iPhone: Share, then Add to Home Screen for full screen'); };
 fullBtn.addEventListener('click', () => {
   if (document.fullscreenElement || document.webkitFullscreenElement) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
