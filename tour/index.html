@@ -566,8 +566,9 @@ function plaque(text, x, y, z, rotY = 0) {   // small room-name sign
 
 // ================= SITE =================
 {
-  const g = new THREE.PlaneGeometry(260, 260); g.rotateX(-Math.PI / 2);
-  const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 260 / 3.2, uv.getY(i) * 260 / 3.2);
+  // church lot only (the rest of the five acres is lawn); x -50..48, z -48..27
+  const LW = 98, LD = 75, g = new THREE.PlaneGeometry(LW, LD); g.rotateX(-Math.PI / 2); g.translate(-1, 0, -10.5);
+  const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * LW / 3.2, uv.getY(i) * LD / 3.2);
   const ground = new THREE.Mesh(g, M.asphalt); ground.receiveShadow = true; scene.add(ground);
   M.field.polygonOffset = true; M.field.polygonOffsetFactor = 4; M.field.polygonOffsetUnits = 4;
   const field = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000, 100, 100), M.field); field.rotation.x = -Math.PI / 2; field.position.y = -0.15; scene.add(field);
@@ -579,7 +580,97 @@ function stripes(x0, z0, n, dx, len) {
   }
 }
 for (const [x0, n] of [[-46.5, 12], [15.5, 12]]) { stripes(x0, 13.0, n, 2.75, 5.4); stripes(x0, 18.6, n, 2.75, 5.4); }
-for (const [x0, n] of [[34, 32], [-125, 30]]) { stripes(x0, -6, n, 2.75, 5.4); stripes(x0, 6, n, 2.75, 5.4); }
+
+// ================= NEIGHBOURHOOD: M-62, May St, the shared entrance drive and the gas station next door =================
+// Layout follows the satellite sketch, not to scale: M-62 runs east-west south of the lot, May St north-south to the west,
+// one concrete entrance off M-62 feeds a short access drive west to the gas station and north into the church lot.
+const SITE = { hwZ: 47, hwW: 18, mayX: -128, mayW: 8, entX: -11, accZ0: 27, accZ1: 34 };
+{
+  const roadMat = M.asphalt, yellow = std({ color: 0xe2b33a, roughness: 0.6 }), curbM = M.curb;
+  const slabAt = (x0, z0, x1, z1, mat, top = 0) => box(x1 - x0, 0.16, z1 - z0, mat, (x0 + x1) / 2, top - 0.08, (z0 + z1) / 2, 3.2);
+  const line = (x0, z0, x1, z1, w, mat, y = 0.012) => { const L = Math.hypot(x1 - x0, z1 - z0), m = new THREE.Mesh(new THREE.PlaneGeometry(w, L), mat); m.rotation.x = -Math.PI / 2; m.rotation.z = Math.atan2(x1 - x0, z1 - z0); m.position.set((x0 + x1) / 2, y, (z0 + z1) / 2); m.receiveShadow = true; scene.add(m); };
+  const dashed = (x0, x1, z, mat) => { for (let x = x0; x < x1; x += 12) line(x, z, x + 3, z, 0.12, mat); };
+  const { hwZ, hwW, mayX, mayW, entX, accZ0, accZ1 } = SITE, hz0 = hwZ - hwW / 2, hz1 = hwZ + hwW / 2;
+  // M-62: four lanes plus a centre turn lane (photo), double yellow, white edge lines, gravel shoulders
+  slabAt(-420, hz0, 420, hz1, roadMat);
+  for (const s of [-1, 1]) { line(-420, hwZ + s * 1.8, 420, hwZ + s * 1.8, 0.11, yellow); line(-420, hwZ + s * 1.55, 420, hwZ + s * 1.55, 0.11, yellow); line(-420, hwZ + s * (hwW / 2 - 0.4), 420, hwZ + s * (hwW / 2 - 0.4), 0.12, M.paint); dashed(-420, 420, hwZ + s * 5.4, M.paint); }
+  // May St
+  slabAt(mayX - mayW / 2, -420, mayX + mayW / 2, hz0, roadMat);
+  slabAt(mayX - mayW / 2, hz1, mayX + mayW / 2, 420, roadMat);
+  line(mayX - 0.12, -420, mayX - 0.12, hz0, 0.1, yellow); line(mayX + 0.12, -420, mayX + 0.12, hz0, 0.1, yellow);
+  line(mayX - 0.12, hz1, mayX - 0.12, 420, 0.1, yellow); line(mayX + 0.12, hz1, mayX + 0.12, 420, 0.1, yellow);
+  // shared access drive: from the entrance west to the gas station, the church lot opens off its north side
+  slabAt(-112, accZ0, 6, accZ1, roadMat);
+  line(-104, (accZ0 + accZ1) / 2, entX - 6, (accZ0 + accZ1) / 2, 0.1, yellow, 0.013);
+  for (const [a, b] of [[-112, -50], [-50, 6]]) box(b - a, 0.15, 0.15, curbM, (a + b) / 2, 0.075, accZ1 + 0.07);          // south curb
+  // concrete entrance apron off M-62 with flared, curbed returns (the photo)
+  {
+    const W = 11, R = 4, z0 = accZ0, z1 = hz0;
+    const sh = new THREE.Shape();
+    sh.moveTo(entX - W / 2 - R, z1); sh.quadraticCurveTo(entX - W / 2, z1, entX - W / 2, z1 - R); sh.lineTo(entX - W / 2, z0);
+    sh.lineTo(entX + W / 2, z0); sh.lineTo(entX + W / 2, z1 - R); sh.quadraticCurveTo(entX + W / 2, z1, entX + W / 2 + R, z1); sh.closePath();
+    const g = new THREE.ShapeGeometry(sh, 16); g.rotateX(Math.PI / 2);
+    const conc = std({ color: 0xc9c6bf, roughness: 0.85, side: THREE.DoubleSide });
+    const m = new THREE.Mesh(g, conc); m.position.y = 0.014; m.receiveShadow = true; scene.add(m);
+    for (let i = 1; i < 6; i++) line(entX - W / 2, z0 + i * (z1 - z0) / 6, entX + W / 2, z0 + i * (z1 - z0) / 6, 0.025, M.curb, 0.016);   // saw cuts
+    for (const s of [-1, 1]) {   // curbs following the flare
+      const pts = []; for (let i = 0; i <= 12; i++) { const t = i / 12, a = t * Math.PI / 2; pts.push(new THREE.Vector3(entX + s * (W / 2 + R - R * Math.cos(a)), 0.08, z1 - R * Math.sin(a))); }
+      pts.push(new THREE.Vector3(entX + s * W / 2, 0.08, z0));
+      for (let i = 0; i < pts.length - 1; i++) beam(pts[i].toArray(), pts[i + 1].toArray(), 0.16, 0.16, curbM);
+    }
+  }
+  // the church lot's entry off the access drive (north side), and a second drive straight to M-62 at the east end (sketch)
+  slabAt(38, accZ1 - 0.01, 47, hz0, roadMat); slabAt(38, 26.9, 47, accZ1, roadMat);
+}
+
+// ---------- gas station next door: single-storey store (white siding, brick base, gable roof), red-band canopy, pumps.
+// Generic and unbranded on purpose.
+{
+  const ox = -86, oz = -6;                                         // site centre
+  slabMat: {
+    const a = M.asphalt, x0 = -112, x1 = -60, z0 = -44, z1 = 27;
+    box(x1 - x0, 0.16, z1 - z0, a, (x0 + x1) / 2, -0.08 + 0.002, (z0 + z1) / 2, 3.2);
+    box(SITE.mayX + SITE.mayW / 2 + 0.2 - x0 + 0.4, 0.16, 9, a, (x0 + SITE.mayX + SITE.mayW / 2) / 2, -0.078, -2);   // drive to May St
+  }
+  const siding = std({ color: 0xf1efe8, roughness: 0.8 }), brick = std({ color: 0x8a5a48, roughness: 0.9 }), shingle = std({ color: 0x3b3d42, roughness: 0.9 });
+  const red = std({ color: 0xc0161f, roughness: 0.45, emissive: 0x5a0508, emissiveIntensity: 0.35 }), soffit = std({ color: 0xf6f5f0, roughness: 0.6, emissive: 0xfff4e0, emissiveIntensity: 0.25 });
+  const black = M.blackMetal || M.fixture;
+  // store: 24 x 13 m, front faces south toward the pumps
+  const sx = ox - 6, sz = oz - 22, SW = 24, SD = 13, SH = 4.2;
+  box(SW, 0.9, SD, brick, sx, 0.45, sz); box(SW, SH - 0.9, SD, siding, sx, 0.9 + (SH - 0.9) / 2, sz);
+  addCollider(sx - SW / 2, sz - SD / 2, sx + SW / 2, sz + SD / 2);
+  for (const s of [-1, 1]) {   // gable roof, ridge east-west
+    const p = new THREE.Mesh(new THREE.BoxGeometry(SW + 0.8, 0.14, SD / 2 / Math.cos(0.42) + 0.6), shingle);
+    p.rotation.x = s * 0.42; p.position.set(sx, SH + Math.tan(0.42) * SD / 4, sz + s * SD / 4); p.castShadow = true; scene.add(p);
+  }
+  { const gs = new THREE.Shape(); gs.moveTo(-SD / 2, 0); gs.lineTo(SD / 2, 0); gs.lineTo(0, Math.tan(0.42) * SD / 2); gs.closePath();
+    for (const s of [-1, 1]) { const m = new THREE.Mesh(new THREE.ShapeGeometry(gs), siding); m.rotation.y = s * Math.PI / 2; m.position.set(sx + s * SW / 2, SH, sz); scene.add(m); } }
+  // centre front gable (the photo), storefront glass with a lit interior, black bollards
+  { const gs = new THREE.Shape(); gs.moveTo(-4.5, 0); gs.lineTo(4.5, 0); gs.lineTo(0, 2.2); gs.closePath();
+    const m = new THREE.Mesh(new THREE.ExtrudeGeometry(gs, { depth: 0.3, bevelEnabled: false }), std({ color: 0x9a9b86, roughness: 0.8 })); m.position.set(sx, SH, sz + SD / 2 - 0.1); scene.add(m); }
+  const shop = M.glass.clone(); shop.emissiveIntensity = 1.6;
+  for (const dx of [-5.2, 0, 5.2]) { const w = dx === 0 ? 2.0 : 3.4, h = dx === 0 ? 2.5 : 1.9; box(w + 0.16, h + 0.16, 0.08, black, sx + dx, 1.0 + h / 2, sz + SD / 2 + 0.02); const g = new THREE.Mesh(new THREE.PlaneGeometry(w, h), shop); g.position.set(sx + dx, 1.0 + h / 2, sz + SD / 2 + 0.07); scene.add(g); }
+  for (const dx of [-10.5, -8, 8, 10.5]) box(0.9, 2.1, 0.06, black, sx + dx, 1.05, sz + SD / 2 + 0.03);   // side service doors
+  for (let x = sx - SW / 2 + 1; x <= sx + SW / 2 - 1; x += 2) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.0, 10), black); b.position.set(x, 0.5, sz + SD / 2 + 1.0); scene.add(b); }
+  pool(sx, sz + SD / 2 + 2.5, 7, 0.22);
+  // canopy: 36 x 13 m, 5.4 m clear, red fascia band, black columns, lit white soffit
+  const cx = ox + 4, cz = oz + 6, CW = 36, CD = 13, CH = 5.4;
+  box(CW, 0.9, CD, soffit, cx, CH + 0.45, cz); box(CW + 0.2, 0.9, CD + 0.2, red, cx, CH + 0.45, cz).scale.set(1, 1, 1);
+  box(CW - 0.2, 0.05, CD - 0.2, soffit, cx, CH - 0.03, cz);
+  box(CW + 0.3, 0.12, CD + 0.3, std({ color: 0x1d1d1f, roughness: 0.6 }), cx, CH + 0.96, cz);   // black cap
+  for (let i = 0; i < 6; i++) {
+    const px = cx - CW / 2 + 3 + i * (CW - 6) / 5;
+    const col = box(0.45, CH, 0.45, black, px, CH / 2, cz); col.castShadow = true;
+    // pump island + dispenser
+    box(1.0, 0.18, 4.2, M.concrete, px, 0.09, cz);
+    box(0.7, 1.75, 0.5, std({ color: 0xe9e7e2, roughness: 0.5 }), px, 0.18 + 0.875, cz + 1.2); box(0.72, 0.35, 0.52, red, px, 1.85, cz + 1.2);
+    box(0.7, 1.75, 0.5, std({ color: 0xe9e7e2, roughness: 0.5 }), px, 0.18 + 0.875, cz - 1.2); box(0.72, 0.35, 0.52, red, px, 1.85, cz - 1.2);
+    addCollider(px - 0.5, cz - 2.1, px + 0.5, cz + 2.1);
+  }
+  for (let i = 0; i < 5; i++) for (const dz of [-3.5, 3.5]) { const lx = cx - CW / 2 + 5 + i * 6.5; halo(lx, CH - 0.1, cz + dz, 1.0, 0.7); }
+  pool(cx, cz, 16, 0.32); pool(cx - 10, cz, 9, 0.2); pool(cx + 10, cz, 9, 0.2);
+  addFixture(cx, CH - 0.4, cz, { intensity: 140, distance: 30, room: 'out' });
+}
 // lawn + walk around the sides and back of the building
 {
   const m = 3.0;
@@ -812,15 +903,35 @@ function island(x0, z0, x1, z1) {
 }
 island(-30, 4.2, -13.5, 8.4); island(13.5, 4.2, 30, 8.4);
 
+// ---------- landscaped berm with trees between the church lot and the gas station lot (driveway shared, lots separate)
+{
+  const bx0 = -60, bx1 = -50, bz0 = -44, bz1 = 26.4, cx = (bx0 + bx1) / 2, L = bz1 - bz0, H = 1.7;
+  const turf = std({ color: 0x46592f, roughness: 1 });
+  const g = new THREE.CylinderGeometry(1, 1, L - 6, 24, 1, true, -Math.PI / 2, Math.PI); g.rotateX(Math.PI / 2); g.rotateZ(0);
+  const berm = new THREE.Mesh(g, turf); berm.scale.set((bx1 - bx0) / 2, H, 1); berm.position.set(cx, 0, (bz0 + bz1) / 2); berm.receiveShadow = true; scene.add(berm);
+  for (const ez of [bz0 + 3, bz1 - 3]) { const c = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), turf); c.scale.set((bx1 - bx0) / 2, H, 3); c.position.set(cx, 0, ez); c.receiveShadow = true; scene.add(c); }
+  box(0.15, 0.15, L, M.curb, bx1 + 0.05, 0.075, (bz0 + bz1) / 2); box(0.15, 0.15, L, M.curb, bx0 - 0.05, 0.075, (bz0 + bz1) / 2);
+  addCollider(bx0, bz0, bx1, bz1);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), col = new THREE.Color();
+  const spots = []; for (let z = bz0 + 3; z < bz1 - 2; z += 4.2) spots.push([cx + R(-1.6, 1.6), z + R(-0.8, 0.8), rnd() < 0.55]);
+  const sp = spots.filter(p => p[2]), dc = spots.filter(p => !p[2]);
+  const spruce = new THREE.InstancedMesh(TREE_GEO.spruce, leafMat, sp.length), oak = new THREE.InstancedMesh(TREE_GEO.oak, leafMat, dc.length);
+  sp.forEach(([x, z], i) => { const h = R(5.5, 8); m4.compose(new THREE.Vector3(x, H * 0.85, z), q.setFromAxisAngle(up, R(0, 6)), new THREE.Vector3(h, h, h)); spruce.setMatrixAt(i, m4); spruce.setColorAt(i, col.setHex([0x3a6040, 0x406a46, 0x355a3a][i % 3])); });
+  dc.forEach(([x, z], i) => { const h = R(6, 9); m4.compose(new THREE.Vector3(x, H * 0.85, z), q.setFromAxisAngle(up, R(0, 6)), new THREE.Vector3(h, h, h)); oak.setMatrixAt(i, m4); oak.setColorAt(i, col.setHex([0x5a7a3c, 0x6a7a38, 0x7a6a34][i % 3])); });
+  for (const m of [spruce, oak]) { m.castShadow = m.receiveShadow = true; scene.add(m); }
+}
+
 // ---------- horizon tree line + parking-lot light poles
 {
   const n = LOW ? 160 : 320, m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), col = new THREE.Color();
   const cone = new THREE.InstancedMesh(TREE_GEO.farSpruce, leafMat, n);
   const round = new THREE.InstancedMesh(TREE_GEO.farOak, leafMat, n);
   for (let i = 0; i < n; i++) {   // clumped into wood lots rather than scattered evenly
-    const a = R(-Math.PI, Math.PI), r = R(150, 260), h = R(11, 20), w = R(0.85, 1.2);
+    let a = R(-Math.PI, Math.PI), r = R(150, 260); const h = R(11, 20), w = R(0.85, 1.2);
+    while (Math.abs(Math.sin(a) * r - 47) < 16 || Math.abs(Math.cos(a) * r + 128) < 10) { a = R(-Math.PI, Math.PI); }
     m4.compose(new THREE.Vector3(Math.cos(a) * r, -0.3, Math.sin(a) * r), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), R(0, 6)), new THREE.Vector3(h * w, h, h * w)); cone.setMatrixAt(i, m4); cone.setColorAt(i, col.setHex(rnd() < 0.5 ? 0x2c4430 : 0x355036));
-    const a2 = R(-Math.PI, Math.PI), r2 = R(140, 250), s = R(10, 17);
+    let a2 = R(-Math.PI, Math.PI); const r2 = R(140, 250), s = R(10, 17);
+    while (Math.abs(Math.sin(a2) * r2 - 47) < 16 || Math.abs(Math.cos(a2) * r2 + 128) < 10) a2 = R(-Math.PI, Math.PI);
     m4.compose(new THREE.Vector3(Math.cos(a2) * r2, -0.3, Math.sin(a2) * r2), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), R(0, 6)), new THREE.Vector3(s * R(0.9, 1.4), s, s * R(0.9, 1.4))); round.setMatrixAt(i, m4); round.setColorAt(i, col.setHex([0x3e5530, 0x4a5a2e, 0x5a5a2c, 0x34492a][(rnd() * 4) | 0]));
   }
   scene.add(cone, round);
@@ -3678,7 +3789,7 @@ function dollFrame(dt) {
   scene.environmentIntensity += (a.env - scene.environmentIntensity) * k; sun.intensity += (a.sun - sun.intensity) * k; fill.intensity += (a.fill - fill.intensity) * k;
   if (performance.now() - lastAssign > 500) { assignLights(new THREE.Vector3(DOLL.cx + 6, EYE, DOLL.cz)); lastAssign = performance.now(); }
 }
-if (P.get('doll') === '1') setDoll(true);
+if (P.get('doll') === '1') { setDoll(true); if (P.get('dd')) DOLL.dist = +P.get('dd'); if (P.get('dy')) DOLL.yaw = deg(+P.get('dy')); }
 const hint = document.getElementById('hint');
 hint.textContent = COARSE ? 'Double tap where you want to go · drag to look · joystick to walk · tap a glass or folding wall to open it'
                           : 'Double click where you want to go · drag to look · W A S D to walk · click a glass or folding wall (or press E) to open it';
