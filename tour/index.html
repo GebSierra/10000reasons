@@ -40,6 +40,14 @@
   #full { top: calc(14px + var(--safe-t)); right: calc(70px + var(--safe-r)); }
   #doll { top: calc(14px + var(--safe-t)); right: calc(126px + var(--safe-r)); }
   .chip.on { background: rgba(255,255,255,.92); color: #1c1e22; }
+  /* one gentle nudge on the dollhouse chip after the tour first opens */
+  @keyframes dollNudge { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+    25% { transform: scale(1.12); box-shadow: 0 0 0 6px rgba(255,255,255,.28); }
+    50% { transform: scale(.98); box-shadow: 0 0 0 10px rgba(255,255,255,0); } 70% { transform: scale(1.05); } }
+  #doll.nudge { animation: dollNudge 1.1s ease-in-out 2; }
+  #doll.nudge svg { animation: dollLift 1.1s ease-in-out 2; }
+  @keyframes dollLift { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-2px); } }
+  @media (prefers-reduced-motion: reduce) { #doll.nudge, #doll.nudge svg { animation: none; } }
   body.dollmode #stick { display: none; }
   /* floor plan download: a quiet pill that only appears in the dollhouse view */
   #plan { position: fixed; z-index: 3; left: 50%; bottom: calc(18px + var(--safe-b)); transform: translateX(-50%); display: none;
@@ -2498,6 +2506,7 @@ function buildRooms(C) {
     g.strokeStyle = '#7a4f2e'; g.lineWidth = 5; g.beginPath(); g.moveTo(w * 0.66, h * 0.62); g.lineTo(w * 0.94, h * 0.62); g.lineTo(w * 0.88, h * 0.78); g.lineTo(w * 0.72, h * 0.78); g.closePath(); g.stroke();
     ['#d9534f', '#e98b2a', '#e7c23b', '#5aa05a', '#3d7cc9'].forEach((c, i) => { g.strokeStyle = c; g.lineWidth = 5; g.beginPath(); g.arc(w * 0.8, h * 0.6, w * (0.16 - i * 0.022), PI, 0); g.stroke(); });
   }));
+  const C_WB3 = cell(512, 288, whiteboard([['Flex Room', '#2f4f7a', 0.15], ['Bible study · classes · meetings', '#3a3a3a', 0.08], ['Tables fold away for open space', '#5a5a5a', 0.07]]));
   const C_WB2 = cell(512, 288, whiteboard([['Romans 8', '#2f4f7a', 0.15], ['v. 28  all things work together', '#3a3a3a', 0.08], ['v. 38-39  nothing can separate us', '#3a3a3a', 0.08], ['Prayer: Jim, the Garcias, VBS', '#9a3d33', 0.08]]));
   const C_ABC = cell(1024, 96, (g, w, h) => {
     g.fillStyle = '#efe6d6'; g.fillRect(0, 0, w, h); const n = 13, cw = w / n;
@@ -3265,40 +3274,25 @@ function buildRooms(C) {
     col(X(119.5) - 0.55, r.z0, X(119.5) + 0.55, r.z0 + 0.7);
   }
 
-  // ================================================================= 4'S & 5'S (door west, plan y 31.5..34.5)
-  {
-    const r = IN('k45'), cz = (r.z0 + r.z1) / 2;
-    at((X(107.5) + X(124)) / 2, 0, r.z0 + 0.18, 0, () => cubbies(X(124) - X(107.5), 1.1, 0.36, 10, 3));
-    onWall(r, 'n', (X(107.5) + X(124)) / 2, 1.7, () => { bx(3.6, 0.62, 0.02, M.wood, 0, 0, 0.01, 0, 1); pic(3.54, 0.56, C_KIDS1, 0, 0, 0.021); });
-    for (const fx of [111, 117]) kidSet(X(fx), Z(34.2), 1.1, 0.6, 0.5, 0.9, 0, 2);
-    roundRug(C_RUG_ROUND, X(123.5), Z(38.3), 0.95);
-    at(r.x1 - 0.17, 0, Z(40.8), -HP, () => lowShelf(1.4, 0.7, 0.32, true));
-    for (let i = 0; i < 6; i++) bx(0.12, 0.12, 0.12, MAT.gloss, X(123.5) + RA(-0.4, 0.4), 0.06 + (i > 3 ? 0.12 : 0), Z(38.3) + RA(-0.3, 0.3), pick(KCOL));
-    onWall(r, 'w', Z(39.0), 1.35, () => { bx(1.5, 0.85, 0.02, M.wood, 0, 0, 0.01, 0, 1); pic(1.44, 0.79, C_BUL3, 0, 0, 0.021); });
-    col(X(107.5), r.z0, X(124), r.z0 + 0.38);
-    col(r.x1 - 0.34, Z(40.8) - 0.72, r.x1, Z(40.8) + 0.72);
+  // ================================================================= FLEX ROOMS 1 + 2 (doors west, plan y 31.5..34.5 and 46.7..49.7)
+  // neutral multi-use rooms for kids or adult study: folding tables, stacking chairs, whiteboard, a credenza
+  for (const key of ['k45', 'k23']) {
+    const r = IN(key), cz = (r.z0 + r.z1) / 2, x0 = r.x0 + 1.5;
+    const tables = [[X(111.5), cz - 0.55], [X(117.6), cz - 0.55], [X(111.5), cz + 0.55], [X(117.6), cz + 0.55]];   // two rows of 6' tables
+    for (const [tx, tz] of tables) {
+      slab(1.83, 0.035, 0.76, 0.01, MAT.gloss, tx, 0.73, tz, 0xd9d6cf);
+      for (const sx of [-0.8, 0.8]) { bx(0.03, 0.71, 0.03, M.blackMetal, tx + sx, 0.36, tz - 0.3); bx(0.03, 0.71, 0.03, M.blackMetal, tx + sx, 0.36, tz + 0.3); bx(0.03, 0.03, 0.6, M.blackMetal, tx + sx, 0.06, tz); }
+      const out = tz < cz ? -1 : 1;
+      for (const dx of [-0.55, 0.55]) STACK.push({ x: tx + dx, z: tz + out * 0.62, ry: out < 0 ? 0 : PI, c: 0x5a5f66 });
+    }
+    // whiteboard on the solid west wall beside the door (north/south sides are folding partitions), credenza under the east window
+    onWall(r, 'w', key === 'k45' ? Z(39.0) : Z(54.2), 1.45, () => { bx(2.2, 1.1, 0.02, MAT.steel, 0, 0, 0.01); pic(2.16, 1.06, C_WB3, 0, 0, 0.021); bx(1.4, 0.025, 0.06, MAT.steel, 0, -0.57, 0.03); });
+    at(r.x1 - 0.23, 0, cz, -HP, () => { bx(1.6, 0.75, 0.44, M.wood, 0, 0.42, 0, 0, 1); for (let i = 0; i < 4; i++) bx(0.39, 0.66, 0.02, M.wood, -0.6 + i * 0.4, 0.42, 0.225, 0, 1); at(0.5, 0.8, 0, 0, () => plant(0.5, 0xe9e3d8)); });
+    at(r.x1 - 0.4, 0, r.z0 + 0.4, 0, () => plant(1.1));
+    for (const [tx, tz] of tables) col(tx - 0.95, tz - 0.4, tx + 0.95, tz + 0.4);
+    col(r.x1 - 0.48, cz - 0.82, r.x1, cz + 0.82);
   }
 
-  // ================================================================= 2'S & 3'S (door west, plan y 46.7..49.7)
-  {
-    const r = IN('k23');
-    kidSet(X(113), Z(50.5), 1.0, 0.6, 0.45, 0.8, 0, 2);
-    kidSet(X(118.5), Z(50.5), 1.0, 0.6, 0.45, 0.8, 0, 2);
-    rug(C_RUG_SOFT, X(121.5), Z(55.2), 2.6, 1.6, 0, 0xb8c4ae);
-    at(r.x1 - 0.17, 0, Z(48.5), -HP, () => lowShelf(1.8, 0.62, 0.32, true));
-    at(r.x0 + 0.17, 0, Z(54.5), HP, () => {
-      bx(0.9, 0.5, 0.32, M.cabinet, 0, 0.25, 0); bx(0.92, 0.03, 0.34, MAT.maple, 0, 0.515, 0);
-      for (let i = 0; i < 2; i++) { bx(0.42, 0.42, 0.02, MAT.gloss, -0.22 + i * 0.44, 0.25, 0.17, 0x9dbb95); sph(0.018, M.blackMetal, -0.05 + i * 0.1, 0.3, 0.185); }
-      bx(0.9, 0.42, 0.02, MAT.gloss, 0, 0.74, -0.15, 0xe9e1d0);
-      for (const x of [-0.3, -0.12]) disc(0.06, M.blackMetal, x, 0.532, 0.02);
-      bx(0.22, 0.04, 0.18, MAT.steel, 0.25, 0.52, 0.02); faucet(0.25, 0.53, -0.1, 0.5, MAT.steel);
-    });
-    for (let i = 0; i < 9; i++) bx(0.15, 0.15, 0.15, MAT.gloss, X(121.5) + RA(-0.8, 0.8), 0.1 + (i > 6 ? 0.15 : 0), Z(55.2) + RA(-0.35, 0.35), pick(KCOL));
-    at(X(118), 0, Z(55.5), 0.5, () => beanBag(0xd99a8c));
-    onWall(r, 'w', Z(44.9), 1.25, () => { bx(1.0, 0.7, 0.02, M.wood, 0, 0, 0.01, 0, 1); pic(0.94, 0.64, C_BUL1, 0, 0, 0.021); });
-    col(r.x1 - 0.34, Z(48.5) - 0.92, r.x1, Z(48.5) + 0.92);
-    col(r.x0, Z(54.5) - 0.47, r.x0 + 0.38, Z(54.5) + 0.47);
-  }
 
   // ================================================================= NURSERY (door at the corridor's south end, plan x 98.4..101.5)
   {
@@ -3655,6 +3649,7 @@ function setDoll(on) {
   else { camera.fov = 75; fit(); }
 }
 dollBtn.addEventListener('click', () => setDoll(!DOLL.on));
+setTimeout(() => { if (!DOLL.on) { dollBtn.classList.add('nudge'); setTimeout(() => dollBtn.classList.remove('nudge'), 2400); } }, 2500);
 addEventListener('keydown', e => { if (e.code === 'KeyV' && !e.repeat && !(e.target instanceof Element && e.target.closest('input, textarea'))) setDoll(!DOLL.on); });
 view.addEventListener('wheel', e => { if (!DOLL.on) return; e.preventDefault(); DOLL.dist = clamp(DOLL.dist * Math.exp(e.deltaY * 0.0012), 18, 120); }, { passive: false });
 view.addEventListener('pointerdown', e => pinch.set(e.pointerId, [e.clientX, e.clientY]));
