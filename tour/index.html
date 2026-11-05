@@ -3849,7 +3849,8 @@ assignLights(player.pos); for (let i = 0; i < 40; i++) updateZone(0.1, player.po
 let eddyMixer = null, eddy = null;
 {
   const ex = px(0) + EXT_T + 1.45, ez = pz(0) + EXT_T + 0.85;
-  new GLTFLoader().load('eddy.glb', g => {
+  const loadEddy = (url, next) => new GLTFLoader().load(url, onEddy, undefined, () => next && loadEddy(next));
+  const onEddy = g => {
     eddy = g.scene; eddy.scale.setScalar(1.80 / 1.69); eddy.position.set(ex, 0, ez); eddy.rotation.y = 1.4;   // 5'-11" tall, faces east toward the doors
     eddy.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = true; o.frustumCulled = false; } });
     const clip = g.animations.find(a => /agree|celebr|dance/i.test(a.name)) || g.animations[0];
@@ -3860,7 +3861,8 @@ let eddyMixer = null, eddy = null;
       eddyMixer = new THREE.AnimationMixer(eddy); eddyMixer.clipAction(clip).play();
     }
     scene.add(eddy); window.__eddy = eddy;
-  }, undefined, () => {});
+  };
+  loadEddy('eddy.glb', 'https://gebsierra.github.io/10000reasons/tour/eddy.glb');   // the Claude preview can't host .glb, so it falls back to the site copy
   addFixture(ex + 0.6, 2.5, ez + 0.6, { intensity: 6, distance: 6, room: 'storage' });
 }
 
