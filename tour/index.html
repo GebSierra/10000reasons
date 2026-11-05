@@ -41,6 +41,13 @@
   #doll { top: calc(14px + var(--safe-t)); right: calc(126px + var(--safe-r)); }
   .chip.on { background: rgba(255,255,255,.92); color: #1c1e22; }
   body.dollmode #stick { display: none; }
+  /* floor plan download: a quiet pill that only appears in the dollhouse view */
+  #plan { position: fixed; z-index: 3; left: 50%; bottom: calc(18px + var(--safe-b)); transform: translateX(-50%); display: none;
+          align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px; text-decoration: none;
+          background: var(--ui-bg); border: 1.5px solid var(--ui-ring); color: var(--ui-fg); font: 600 14px system-ui, -apple-system, sans-serif;
+          backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  body.dollmode #plan { display: inline-flex; }
+  body.dollmode #hint { bottom: calc(70px + var(--safe-b)); }
 
   #hint { position: fixed; z-index: 3; left: 50%; bottom: calc(26px + var(--safe-b)); transform: translateX(-50%);
           max-width: min(560px, calc(100vw - 230px)); padding: 10px 16px; border-radius: 12px; text-align: center;
@@ -81,6 +88,9 @@
 <button class="chip" id="doll" aria-label="Dollhouse view" title="Dollhouse view (roof off)" aria-pressed="false">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l9 4.5-9 4.5-9-4.5z" stroke-dasharray="2.2 2"/><path d="M3 11.5l9 4.5 9-4.5M3 11.5v5l9 4.5 9-4.5v-5M12 16v5"/></svg>
 </button>
+<a id="plan" href="floorplan.png" download="Trinity-Bible-Church-floor-plan.png" title="Download the floor plan">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Floor plan
+</a>
 <div id="hint"></div>
 <div id="hud"></div>
 
@@ -158,24 +168,23 @@ const ROOM_PLAN = {
   mech:       [0, 64.3, 13, 75.75, 3.0, 'concrete'],
   worship:    [0, 8.67, 57.33, 75.75, 'vault', 'carpet'],
   storage:    [0, 0, 48.67, 8.67, 3.0, 'concrete'],
-  kitchen:    [57.33, 0, 71.42, 24.6, 2.75, 'tile'],
+  kitchen:    [57.33, 0, 71.42, 26.5, 2.75, 'tile'],
   kitchenN:   [48.67, 0, 57.33, 8.67, 2.75, 'tile'],     // kitchen's north-west leg (the 8'-8" strip beside storage)
-  office:     [71.42, 0, 86, 11.92, 2.75, 'carpet'],
-  copy:       [71.42, 11.92, 86, 17.4, 2.75, 'tile'],
-  reception:  [71.42, 17.4, 86, 29, 2.75, 'oak'],          // coffee / reception: open to the fellowship hall on the south
-  coffee:     [57.33, 24.6, 71.42, 29, 2.75, 'oak'],      // coffee-bar strip south of the kitchen, out to the worship wall
-  mtg:        [86, 0, 103.08, 18.4, 2.75, 'carpet'],
-  childbath:  [86, 18.4, 98, 36.3, 2.75, 'tile'],
-  hall:       [86, 36.3, 98, 40.8, 2.75, 'oak'],          // short hall: fellowship hall -> corridor, between child bath and women
+  office:     [71.42, 0, 86, 18.42, 2.75, 'carpet'],       // pastor's office, 14'-7" x 18'-5" (copy room removed)
+  reception:  [71.42, 18.42, 86, 31.33, 2.75, 'oak'],      // reception / printing: open to the fellowship hall on the south
+  coffee:     [57.33, 26.5, 71.42, 31.33, 2.75, 'oak'],    // bookstore strip south of the kitchen, out to the worship wall
+  mtg:        [86, 0, 103.08, 21.67, 2.75, 'carpet'],      // Family Bible Fellowship (adult Bible study), 17'-1" x 21'-8"
+  childbath:  [86, 21.67, 98, 35.75, 2.75, 'tile'],
+  hall:       [86, 35.75, 98, 40.8, 2.75, 'oak'],          // short hall: fellowship hall -> corridor, between child bath and women
   women:      [86, 40.8, 98, 58.2, 2.75, 'tile'],
   men:        [86, 58.2, 98, 75.75, 2.75, 'tile'],
   classroom:  [103.08, 0, 129.17, 23.1, 2.75, 'carpet'],
   exithall:   [103.08, 23.1, 129.17, 28.2, 2.75, 'oak'],
-  corridor:   [98, 18.4, 103.08, 58.6, 2.75, 'oak'],       // runs from the meeting room's door down to the nursery
+  corridor:   [98, 21.67, 103.08, 58.6, 2.75, 'oak'],      // runs from the Family Bible Fellowship door down to the nursery
   k45:        [103.08, 28.2, 129.17, 43.4, 2.75, 'carpet'],
   k23:        [103.08, 43.4, 129.17, 58.6, 2.75, 'carpet'],
   nursery:    [98, 58.6, 129.17, 75.75, 2.75, 'carpet'],
-  fellowship: [57.33, 29, 86, 75.75, 3.66, 'oak'],
+  fellowship: [57.33, 31.33, 86, 75.75, 3.66, 'oak'],
   vestibule:  [59.57, 75.75, 84.5, 84.42, 3.0, 'tile'],
 };
 const ROOMS = {};   // world rects { x0, z0, x1, z1, h, floor }
@@ -915,13 +924,12 @@ for (let i = 0; i < 7; i++) {
 }
 for (let i = 0; i < 5; i++) bigWindow('z', BX0, BX0 + EXT_T, ZR - 3.6 + i * 1.8, 2.9, 5.0, 1.72);   // tall window wall behind the stage
 // ---- centre block (A.1R final): kitchen, coffee/reception, copy, pastor's office
-planWall(57.33, 24.6, 71.42, 24.6, { gaps: [[67.7, 71.0]] });                     // kitchen | coffee bar: door at its east end
-planWall(71.42, 11.92, 86, 11.92, { gaps: [[80.5, 83.8]] });                       // office | copy
-planWall(71.42, 17.4, 86, 17.4, { gaps: [[76.1, 79.9]] });                         // copy | reception (copy entered from reception)
-// coffee / reception is OPEN to the fellowship hall along plan y 29 (no wall; a drywall bulkhead closes 2.75 -> 3.66 m)
+planWall(57.33, 26.5, 71.42, 26.5, { gaps: [[67.7, 71.0]] });                     // kitchen | bookstore strip: door at its east end
+planWall(71.42, 18.42, 86, 18.42, { gaps: [[80.2, 83.5]] });                       // office | reception (office door)
+// bookstore / reception is OPEN to the fellowship hall along plan y 31.33 (no wall; a drywall bulkhead closes 2.75 -> 3.66 m)
 // ---- restroom / children's block and its hallways
-planWall(86, 18.4, 103.08, 18.4, { gaps: [[98.7, 101.7]] });                       // meeting room | child bath + corridor (meeting room door into the corridor)
-planWall(86, 36.3, 98, 36.3);                                                       // child bath | short hall
+planWall(86, 21.67, 103.08, 21.67, { gaps: [[98.7, 101.7]] });                     // Family Bible Fellowship | child bath + corridor (its door into the corridor)
+planWall(86, 35.75, 98, 35.75);                                                     // child bath | short hall
 planWall(86, 40.8, 98, 40.8);                                                       // short hall | women
 planWall(86, 58.2, 98, 58.2);                                                       // women | men
 planWall(103.08, 23.1, 129.17, 23.1, { gaps: [[108.3, 111.3]] });                  // children's classroom | exit hall
@@ -933,14 +941,13 @@ planWall(98, 58.6, 103.08, 58.6, { gaps: [[98.4, 101.5]] });                    
 planWall(0, 64.3, 13, 64.3, { h: 'R', gaps: [[4.3, 7.8]] });                      // mechanical
 // --- vertical walls (constant plan x)
 planWall(48.67, 0, 48.67, 8.67);                                                    // storage | kitchen north leg
-planWall(57.33, 8.67, 57.33, 29, { h: 'R', gaps: [[16.5, 19.3]] });               // worship | kitchen (door) + coffee bar (solid out to the worship wall)
-planWall(71.42, 0, 71.42, 24.6, { gaps: [[3.8, 6.8]] });                           // kitchen | pastor's office (door), copy, reception
-planWall(86, 0, 86, 11.4);                                                          // office | meeting room (solid wall)
-planWall(86, 11.4, 86, 18.4);                                                       // copy | meeting room
-planWall(86, 18.4, 86, 36.3);                                                       // reception + fellowship | child bath
+planWall(57.33, 8.67, 57.33, 31.33, { h: 'R', gaps: [[16.5, 19.3]] });               // worship | kitchen (door) + coffee bar (solid out to the worship wall)
+planWall(71.42, 0, 71.42, 26.5, { gaps: [[3.8, 6.8]] });                           // kitchen | pastor's office (door), reception
+planWall(86, 0, 86, 21.67);                                                         // office + reception | Family Bible Fellowship (solid wall)
+planWall(86, 21.67, 86, 35.75);                                                     // reception + fellowship | child bath
 // the short hall is open to the fellowship hall (plan y 36.3 … 40.8); restrooms are entered from their WEST side only
 planWall(86, 40.8, 86, 75.75, { gaps: [[42.5, 45.5], [70.6, 73.7]] });           // fellowship | women's door (north end), men's door (south end)
-planWall(98, 18.4, 98, 36.3, { gaps: [[23, 26]] });                                // child bath | corridor (child bath entered from the corridor)
+planWall(98, 21.67, 98, 35.75, { gaps: [[30, 33]] });                                // child bath | corridor (child bath entered from the corridor)
 planWall(98, 40.8, 98, 58.6);                                                       // women + men | corridor (no doors)
 planWall(98, 58.6, 98, 75.75);                                                      // men | nursery
 planWall(103.08, 0, 103.08, 23.1, { gaps: [[19, 22]] });                           // meeting room + corridor | children's classroom (door off the corridor)
@@ -948,8 +955,8 @@ planWall(103.08, 28.2, 103.08, 58.6, { gaps: [[31.5, 34.5], [46.7, 49.7]] });   
 planWall(122.6, 0, 122.6, 5.4);                                                     // classroom storage closet
 planWall(13, 64.3, 13, 75.75, { h: 'R' });                                         // mechanical
 // bulkhead over the open coffee/reception edge (reception ceiling 2.75 m, fellowship ceiling 3.66 m)
-box(px(86) - px(57.33), 3.7 - 2.75, INT_T, M.drywall, (px(57.33) + px(86)) / 2, (2.75 + 3.7) / 2, pz(29));
-box(px(86) - px(57.33), 0.06, INT_T + 0.04, M.wood, (px(57.33) + px(86)) / 2, 2.78, pz(29));
+box(px(86) - px(57.33), 3.7 - 2.75, INT_T, M.drywall, (px(57.33) + px(86)) / 2, (2.75 + 3.7) / 2, pz(31.33));
+box(px(86) - px(57.33), 0.06, INT_T + 0.04, M.wood, (px(57.33) + px(86)) / 2, 2.78, pz(31.33));
 // --- sound booth (A.1R final): an open console area against the glass wall, enclosed by a 42" knee wall on three sides
 const BOOTH = { x0: px(50.3), x1: px(57.33) - INT_T / 2, z0: pz(32.6), z1: pz(42.3) };
 {
@@ -963,7 +970,7 @@ const COATS = null;   // coat racks now sit on the fellowship hall's south wall 
 // folding glass wall between Worship and Fellowship: glass panels to the fellowship ceiling, drywall above.
 // Fixed glass behind the sound booth; the run south of it is operable (folds against the booth end).
 {
-  const x = WX1, zA = pz(29), zBooth1 = BOOTH.z1, zS = FZ - EXT_T, hG = 3.66;
+  const x = WX1, zA = pz(31.33), zBooth1 = BOOTH.z1, zS = FZ - EXT_T, hG = 3.66;
   slopedWallX(x, zA, zS, hG, M.drywall);                    // header above the glass up to the roof
   {   // fixed run: north end -> booth's south end
     const n = Math.max(1, Math.round((zBooth1 - zA) / 1.05)), pw = (zBooth1 - zA) / n;
@@ -1048,8 +1055,8 @@ wayfind(["CHILDREN'S WING  →", 'Classrooms · Nursery · Exit'], px(86) - 0.09
 
 // room-name plaques beside the main doors (hallway side)
 for (const [text, xf, yf, rot] of [
-  ['WOMEN', 86, 46.4, -Math.PI / 2], ['MEN', 86, 69.8, -Math.PI / 2], ["4'S & 5'S", 103.08, 35.4, -Math.PI / 2], ["2'S & 3'S", 103.08, 50.6, -Math.PI / 2], ['MEETING ROOM', 102.3, 18.4, 0], ['COPY', 80.7, 17.4, 0],
-  ['NURSERY', 102.3, 58.6, Math.PI], ["CHILDREN'S CLASSROOM", 103.08, 22.7, -Math.PI / 2], ['RESTROOM', 98, 27, Math.PI / 2], ['KITCHEN', 66.9, 24.6, 0]]) {
+  ['WOMEN', 86, 46.4, -Math.PI / 2], ['MEN', 86, 69.8, -Math.PI / 2], ['FLEX ROOM 1', 103.08, 35.4, -Math.PI / 2], ['FLEX ROOM 2', 103.08, 50.6, -Math.PI / 2], ['FAMILY BIBLE FELLOWSHIP', 102.3, 21.67, 0], ['BOOKSTORE', 62.25, 26.5, 0],
+  ['NURSERY', 102.3, 58.6, Math.PI], ["CHILDREN'S CLASSROOM", 103.08, 22.7, -Math.PI / 2], ['RESTROOM', 98, 29, Math.PI / 2], ['KITCHEN', 66.9, 26.5, 0]]) {
   const x = px(xf), z = pz(yf), o = 0.09;
   const nx = Math.round(Math.sin(rot)), nz = Math.round(Math.cos(rot));
   plaque(text, x + nx * o, 1.55, z + nz * o, rot);
@@ -1897,7 +1904,7 @@ function buildFellowship(C) {
   // ======================================================================================
   // 2. TABLES: 60" rounds with linen, place settings and 8 upholstered chairs each
   // ======================================================================================
-  const TABLES = [[-2.16, -30.6], [1.18, -30.6], [-2.16, -27.26], [1.18, -27.26], [-2.16, -23.92], [1.18, -23.92]];   // 1.2 m clear along the glass, 1.1 m aisles
+  const TABLES = [[-2.16, -29.9], [1.18, -29.9], [-2.16, -26.75], [1.18, -26.75], [-2.16, -23.6], [1.18, -23.6]];   // shifted south: the hall's north edge moved to plan y 31.33   // 1.2 m clear along the glass, 1.1 m aisles
   const TR = 0.76, TOP = 0.755, CHAIR_R = 0.88;
   {
     // linen cloth (top + skirt) as one geometry
@@ -2085,7 +2092,7 @@ function buildFellowship(C) {
     g.font = `600 150px ${font}`; if ('letterSpacing' in g) g.letterSpacing = '26px';
     g.fillText('WELCOME', 524, 136, 1000);
     const lm = M.letters.clone(); lm.alphaMap = tex(c, false, false); lm.transparent = true; lm.alphaTest = 0.45;
-    const w = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.5), lm); w.position.set(-0.31, 3.25, pz(29) + INT_T / 2 + 0.006); scene.add(w);
+    const w = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.5), lm); w.position.set(-0.31, 3.25, pz(31.33) + INT_T / 2 + 0.006); scene.add(w);
   }
 
   // ======================================================================================
@@ -3005,28 +3012,14 @@ function buildRooms(C) {
     col(n.x0, n.z0 + 0.95, n.x0 + 0.8, n.z1 - 0.2);
   }
 
-  // ================================================================= COFFEE BAR (strip south of the kitchen, open to the fellowship hall)
+  // ================================================================= BOOKSTORE (strip south of the kitchen, open to the fellowship hall)
   {
-    const r = IN('coffee'), cx0 = X(58), cx1 = X(66.5), L = cx1 - cx0, cz = r.z0 + 0.31;
-    const mods = []; let rem = L; while (rem > 1.45) { mods.push(['d', 0.9]); rem -= 0.9; } mods.push(['k', rem]);
-    at((cx0 + cx1) / 2, 0, cz, 0, () => baseRun(mods, { front: M.wood, body: MAT.lowerCab, pull: M.blackMetal }));
-    bx(L, 0.505, 0.01, MAT.tile, (cx0 + cx1) / 2, 1.1675, r.z0 + 0.005, 0, 0.3);
-    for (const y of [1.55, 1.95]) { bx(L, 0.035, 0.3, M.wood, (cx0 + cx1) / 2, y, r.z0 + 0.15, 0, 1.2); for (let x = cx0 + 0.25; x < cx1; x += 1.0) bx(0.02, 0.1, 0.22, M.blackMetal, x, y - 0.065, r.z0 + 0.11); }
-    at((cx0 + cx1) / 2, 0, r.z0, 0, () => {
-      // urns, cups, mugs on the counter; mugs and jars on the open shelves
-      for (const dx of [-L / 2 + 0.45, -L / 2 + 0.95]) { cyl(0.15, 0.15, 0.48, MAT.steel, dx, 0.915 + 0.32, 0.32, 0, 18); cyl(0.12, 0.15, 0.08, M.blackMetal, dx, 0.955, 0.32, 0, 18); cyl(0.1, 0.15, 0.05, MAT.steel, dx, 1.5, 0.32, 0, 18); sph(0.025, M.blackMetal, dx, 1.545, 0.32); bx(0.03, 0.06, 0.06, M.blackMetal, dx, 1.035, 0.48); }
-      for (let k = 0; k < 3; k++) cyl(0.042, 0.036, 0.26, MAT.gloss, -L / 2 + 1.35 + k * 0.1, 1.045, 0.26, 0xf4f1ea, 12);
-      bx(0.42, 0.04, 0.3, M.wood, -L / 2 + 1.9, 0.935, 0.3, 0, 1);
-      for (let k = 0; k < 6; k++) at(-L / 2 + 1.75 + (k % 3) * 0.12, 0.955, 0.24 + (k > 2 ? 0.1 : 0), 0, () => mug(pick([0xf2eee6, 0x6e2232, 0x2f3e55, 0xd9c8a6])));
-      at(0.4, 0.915, 0.33, 0, () => { bx(0.32, 0.4, 0.36, M.blackMetal, 0, 0.2, 0); bx(0.2, 0.12, 0.005, MAT.darkGlass, 0, 0.3, 0.181); cyl(0.07, 0.07, 0.12, MAT.darkGlass, 0, 0.08, 0.1, 0, 12); });
-      for (let k = 0; k < 4; k++) cyl(0.06, 0.06, 0.16, MAT.gloss, 1.0 + k * 0.17, 0.995, 0.32, pick([0xe9e1d0, 0x6f7b72, 0xb7774f]), 12);
-      at(L / 2 - 0.6, 0.915, 0.3, 0, () => plant(0.45, 0xe9e3d8));
-      for (const y of [1.568, 1.968]) for (let x = -L / 2 + 0.2; x < L / 2 - 0.2; x += RA(0.09, 0.16)) { if (rr() < 0.15) { x += 0.2; continue; } if (rr() < 0.7) cyl(0.04, 0.036, 0.1, MAT.gloss, x, y + 0.05, 0.15, pick([0xf2eee6, 0xf2eee6, 0x6e2232, 0x2f3e55, 0xb08850]), 10); else cyl(0.055, 0.055, 0.2, MAT.gloss, x, y + 0.1, 0.15, pick([0x6b4a2b, 0xd9c8a6]), 10); }
-      at(0, 2.35, 0, 0, framePic(C_PS34, 1.2, 0.42, M.wood));
-    });
+    const r = IN('coffee'), cx0 = X(58), cx1 = X(66.5), L = cx1 - cx0;
+    at((cx0 + cx1) / 2, 0, r.z0 + 0.175, 0, () => bookcase(L, 2.1, 0.35, 6));   // wall of books on the kitchen's south wall
     lightShape(T.DOWN, (cx0 + cx1) / 2, 1.9, r.z0 + 0.04, L + 0.6, 1.8, 0.28);
-    col(cx0, r.z0, cx1, r.z0 + 0.66);
+    col(cx0, r.z0, cx1, r.z0 + 0.4);
   }
+
 
   // ================================================================= PASTOR'S OFFICE (exterior door north, doors to kitchen and copy)
   {
@@ -3052,9 +3045,14 @@ function buildRooms(C) {
     // bookcases: west wall south of the kitchen door (plan y 3.8..6.8) and the south wall west of the copy door (plan x 80.5)
     const bz0 = Z(6.8) + 0.25;
     at(r.x0 + 0.175, 0, (bz0 + r.z1) / 2, HP, () => bookcase(r.z1 - bz0, 2.1, 0.35, 6));
-    const sb0 = r.x0 + 0.37, sb1 = X(80.5) - 0.25;
+    const sb0 = r.x0 + 0.37, sb1 = X(80.2) - 0.25;
     at((sb0 + sb1) / 2, 0, r.z1 - 0.175, PI, () => bookcase(sb1 - sb0, 2.1, 0.35, 6));
     onWall(r, 'w', (r.z0 + Z(3.8)) / 2, 1.55, framePic(C_PS46, 0.45, 0.6, M.wood));
+    // sitting area in the enlarged south half: two armchairs facing the desk, side table between
+    for (const ax of [X(76.2), X(79.4)]) at(ax, 0, Z(13.6), PI, () => armchair(0xb9ad9a, 0x2f3e55));
+    at(X(77.8), 0, Z(13.6), 0, () => { cyl(0.22, 0.22, 0.03, M.wood, 0, 0.53, 0, 0, 24); cyl(0.02, 0.02, 0.5, M.blackMetal, 0, 0.26, 0); cyl(0.16, 0.18, 0.02, M.blackMetal, 0, 0.01, 0, 0, 16); });
+    rug(C_RUG_OFFICE, X(77.8), Z(13.4), X(81.2) - X(74.4), Z(16.2) - Z(10.8), 0, 0x6f3b33);
+    col(X(75.4), Z(12.6), X(80.2), Z(14.6));
     at(r.x1 - 0.35, 0, r.z0 + 0.4, 0, () => plant(1.15));
     // framed photo on the north wall between the exterior door and the window (photo.jpg ships with the page)
     {
@@ -3076,57 +3074,17 @@ function buildRooms(C) {
     col(r.x1 - 0.6, r.z0, r.x1, r.z0 + 0.65);
   }
 
-  // ================================================================= COPY ROOM (doors from the office, plan x 80.5..83.8, and reception, x 76.1..79.9)
-  {
-    const r = IN('copy'), cx1 = X(80.5) - 0.15, L = cx1 - r.x0;
-    const mods = [['d', 0.9], ['k', 0.6]]; let rem = L - 1.5; while (rem > 0.95) { mods.push(['d', 0.9]); rem -= 0.9; } mods.push(['k', rem]);
-    at((r.x0 + cx1) / 2, 0, r.z0 + 0.31, 0, () => baseRun(mods));
-    for (const y of [1.45, 1.85]) { bx(L, 0.03, 0.3, M.wood, (r.x0 + cx1) / 2, y, r.z0 + 0.15, 0, 1); for (const x of [r.x0 + 0.2, (r.x0 + cx1) / 2, cx1 - 0.2]) bx(0.02, 0.12, 0.2, M.blackMetal, x, y - 0.075, r.z0 + 0.11); }
-    at((r.x0 + cx1) / 2, 0, r.z0, 0, () => {
-      for (const y of [1.465, 1.865]) {
-        let x = -L / 2 + 0.1;
-        while (x < L / 2 - 0.2) {
-          if (rr() < 0.25) { bx(0.3, 0.27, 0.23, MAT.soft, x + 0.15, y + 0.135, 0.13, 0xd9c8a6); bx(0.31, 0.03, 0.24, MAT.soft, x + 0.15, y + 0.28, 0.13, 0xc9b38a); x += 0.34; continue; }
-          const nn = (RA(4, 9)) | 0, c = pick([0x2f3e55, 0x6e2232, 0x3d5440, 0x2b2a28, 0xe9e1d0]);
-          for (let i = 0; i < nn; i++) { const cc = rr() < 0.3 ? pick([0x2f3e55, 0x6e2232, 0x3d5440, 0x2b2a28, 0xe9e1d0]) : c; bx(0.052, 0.29, 0.25, MAT.soft, x + 0.028, y + 0.145, 0.14, cc); bx(0.03, 0.06, 0.004, MAT.soft, x + 0.028, y + 0.2, 0.267, 0xcfc6b6); x += 0.056 + (rr() < 0.2 ? 0.01 : 0.002); }
-          x += RA(0.08, 0.3);
-        }
-      }
-      at(-L / 2 + 0.6, 0.915, 0.3, 0, () => { bx(0.44, 0.3, 0.4, MAT.gloss, 0, 0.15, 0, 0xd8d6d0); bx(0.3, 0.02, 0.22, M.charcoal, 0, 0.305, -0.04); bx(0.12, 0.05, 0.005, MAT.darkGlass, 0.12, 0.25, 0.201); });
-      for (let k = 0; k < 3; k++) bx(0.22, 0.055 * (k + 2), 0.29, MAT.soft, -0.2 + k * 0.25, 0.915 + 0.055 * (k + 2) / 2, 0.3, 0xf7f5ef);
-      at(0.7, 0.915, 0.3, 0.2, () => { bx(0.38, 0.03, 0.38, MAT.gloss, 0, 0.015, 0, 0x6a6c6e); bx(0.36, 0.02, 0.025, M.blackMetal, 0, 0.05, 0.18); });
-      at(L / 2 - 0.4, 0.915, 0.3, 0, () => { for (let i = 0; i < 4; i++) bx(0.32, 0.005, 0.25, MAT.gloss, 0, 0.05 + i * 0.06, 0, 0x2b2a28); bx(0.005, 0.24, 0.25, MAT.gloss, -0.16, 0.12, 0, 0x2b2a28); bx(0.005, 0.24, 0.25, MAT.gloss, 0.16, 0.12, 0, 0x2b2a28); });
-    });
-    // floor copier against the south wall, east of the reception door
-    at(r.x1 - 0.42, 0, r.z1 - 0.36, PI, () => {
-      bx(0.6, 0.62, 0.66, MAT.gloss, 0, 0.31, 0, 0xe2e0db); bx(0.58, 0.08, 0.64, M.charcoal, 0, 0.04, 0);
-      for (let i = 0; i < 3; i++) bx(0.56, 0.005, 0.01, M.charcoal, 0, 0.22 + i * 0.13, 0.331);
-      bx(0.6, 0.28, 0.6, MAT.gloss, 0, 0.76, -0.03, 0xd2d0cb); bx(0.6, 0.12, 0.56, MAT.gloss, 0, 0.96, -0.05, 0xe6e4df);
-      bx(0.4, 0.03, 0.2, M.charcoal, -0.06, 0.91, 0.27); at(0.15, 1.0, 0.27, 0, () => bx(0.22, 0.12, 0.02, MAT.darkGlass, 0, 0, 0), { rx: -0.9 });
-    });
-    // cedar mail sorter on the south wall, west of the reception door
-    at((r.x0 + X(76.1)) / 2, 0, r.z1, PI, () => {
-      const W = Math.min(1.2, X(76.1) - r.x0 - 0.3), H = 0.6, D = 0.3, y0 = 1.25;
-      bx(W, H, 0.012, M.wood, 0, y0 + H / 2, 0.006, 0, 1);
-      for (let i = 0; i <= 6; i++) bx(0.015, H, D, M.wood, -W / 2 + i * W / 6, y0 + H / 2, D / 2, 0, 1);
-      for (let j = 0; j <= 3; j++) bx(W, 0.015, D, M.wood, 0, y0 + j * H / 3, D / 2, 0, 1);
-      for (let i = 0; i < 6; i++) for (let j = 0; j < 3; j++) if (rr() < 0.6) bx(W / 6 - 0.04, RA(0.02, 0.08), D - 0.06, MAT.soft, -W / 2 + (i + 0.5) * W / 6, y0 + j * H / 3 + 0.03, D / 2, pick([0xfbf9f4, 0xf3ecd8, 0xe7e1d4]));
-    });
-    col(r.x0, r.z0, cx1, r.z0 + 0.65);
-    col(r.x1 - 0.75, r.z1 - 0.72, r.x1, r.z1);
-  }
-
   // ================================================================= RECEPTION (open to the fellowship hall; desk faces south)
   {
     const r = IN('reception');
     // cedar slat feature wall with a black cross on the east wall
-    const sz0 = Z(19.0), sz1 = Z(25.6), sTop = 2.62, zc = (sz0 + sz1) / 2;
+    const sz0 = Z(21.3), sz1 = Z(27.9), sTop = 2.62, zc = (sz0 + sz1) / 2;
     bx(0.02, sTop, sz1 - sz0 + 0.04, M.charcoal, r.x1 - 0.01, sTop / 2, zc);
     for (let z = sz0 + 0.025; z < sz1; z += 0.07) bx(0.03, sTop - 0.04, 0.045, M.wood, r.x1 - 0.035, sTop / 2, z, 0, 1.5);
     bx(0.06, 0.95, 0.08, M.blackMetal, r.x1 - 0.08, 1.78, zc); bx(0.06, 0.08, 0.56, M.blackMetal, r.x1 - 0.08, 1.98, zc);
     lightShape(T.DOWN, r.x1 - 0.06, 1.55, zc, 2.4, 2.4, 0.42, -HP);
-    // welcome desk (plan x 75.7..83.5, y 26.9..28.6), cedar slat front facing the fellowship hall
-    const dx = (X(75.7) + X(83.5)) / 2, dz = (Z(26.9) + Z(28.6)) / 2, W = X(83.5) - X(75.7), D = Z(28.6) - Z(26.9);
+    // welcome desk (plan x 75.7..83.5, y 29.2..30.9), cedar slat front facing the fellowship hall
+    const dx = (X(75.7) + X(83.5)) / 2, dz = (Z(29.2) + Z(30.9)) / 2, W = X(83.5) - X(75.7), D = Z(30.9) - Z(29.2);
     at(dx, 0, dz, 0, () => {
       const Hd = 1.06;
       bx(W, Hd - 0.08, 0.04, M.charcoal, 0, 0.08 + (Hd - 0.08) / 2, D / 2 - 0.05);
@@ -3144,22 +3102,33 @@ function buildRooms(C) {
     at(dx + 0.2, 0, dz - D / 2 - 0.55, 0.2, () => taskChair());
     for (const s of [-1, 1]) { pendant(dx + s * 0.6, dz, 1.95, r.h, 0.8); halo(dx + s * 0.6, 1.9, dz, 0.5, 0.35); }
     addFixture(dx, 1.8, dz, { intensity: 6, distance: 6, color: 0xffcf96, room: 'reception' });
-    // waiting nook in the north-west corner (clear of the copy door, plan x 76.1..79.9)
+    // printing station on the west wall (the copy room's printers moved here): floor copier + cabinet with a desktop printer
+    at(r.x0 + 0.36, 0, Z(19.9), HP, () => {
+      bx(0.6, 0.62, 0.66, MAT.gloss, 0, 0.31, 0, 0xe2e0db); bx(0.58, 0.08, 0.64, M.charcoal, 0, 0.04, 0);
+      for (let i = 0; i < 3; i++) bx(0.56, 0.005, 0.01, M.charcoal, 0, 0.22 + i * 0.13, 0.331);
+      bx(0.6, 0.28, 0.6, MAT.gloss, 0, 0.76, -0.03, 0xd2d0cb); bx(0.6, 0.12, 0.56, MAT.gloss, 0, 0.96, -0.05, 0xe6e4df);
+      bx(0.4, 0.03, 0.2, M.charcoal, -0.06, 0.91, 0.27); at(0.15, 1.0, 0.27, 0, () => bx(0.22, 0.12, 0.02, MAT.darkGlass, 0, 0, 0), { rx: -0.9 });
+    });
+    at(r.x0 + 0.3, 0, Z(22.2), HP, () => {
+      bx(0.7, 0.86, 0.55, M.wood, 0, 0.43, 0, 0, 1); slab(0.74, 0.035, 0.58, 0.01, M.quartz, 0, 0.88, 0);
+      at(-0.1, 0.9, 0, 0, () => { bx(0.44, 0.24, 0.38, MAT.gloss, 0, 0.12, 0, 0xd8d6d0); bx(0.3, 0.02, 0.22, M.charcoal, 0, 0.245, -0.04); });
+      for (let k = 0; k < 3; k++) bx(0.16, 0.05 * (k + 2), 0.24, MAT.soft, 0.22, 0.9 + 0.05 * (k + 2) / 2, 0, 0xf7f5ef);
+    });
+    // waiting chair + side table on the west wall, south of the printers
     const nx = (r.x0 + X(75.7)) / 2;
-    rug(C_RUG_RECEP, nx, (r.z0 + Z(24.4)) / 2, X(75.7) - r.x0 - 0.15, Z(24.4) - r.z0 - 0.1, 0, 0x8c8072);
-    at(r.x0 + 0.33, 0, Z(19.4), HP, () => armchair(0xb9ad9a, 0x6e2232));
-    at(r.x0 + 0.33, 0, Z(22.6), HP, () => armchair(0xb9ad9a, 0xb08850));
-    at(r.x0 + 0.28, 0, Z(21.0), 0, () => { cyl(0.22, 0.22, 0.03, M.wood, 0, 0.53, 0, 0, 24); cyl(0.02, 0.02, 0.5, M.blackMetal, 0, 0.26, 0); cyl(0.16, 0.18, 0.02, M.blackMetal, 0, 0.01, 0, 0, 16); cyl(0.05, 0.04, 0.18, MAT.gloss, 0.06, 0.635, 0.04, 0x6f7b72); });
+    rug(C_RUG_RECEP, nx, (Z(23.8) + Z(27.4)) / 2, X(75.7) - r.x0 - 0.15, Z(27.4) - Z(23.8), 0, 0x8c8072);
+    at(r.x0 + 0.33, 0, Z(25.0), HP, () => armchair(0xb9ad9a, 0x6e2232));
+    at(r.x0 + 0.28, 0, Z(26.9), 0, () => { cyl(0.22, 0.22, 0.03, M.wood, 0, 0.53, 0, 0, 24); cyl(0.02, 0.02, 0.5, M.blackMetal, 0, 0.26, 0); cyl(0.16, 0.18, 0.02, M.blackMetal, 0, 0.01, 0, 0, 16); cyl(0.05, 0.04, 0.18, MAT.gloss, 0.06, 0.635, 0.04, 0x6f7b72); });
     onWall(r, 'n', (r.x0 + X(76.1)) / 2, 1.6, framePic(C_LAND3, 0.95, 0.7, M.blackMetal));
-    at(r.x1 - 0.35, 0, Z(26.6), 0, () => plant(1.25, 0xe9e3d8));
+    at(r.x1 - 0.35, 0, Z(28.9), 0, () => plant(1.25, 0xe9e3d8));
     at(r.x1 - 0.35, 0, r.z0 + 0.4, 0, () => plant(1.0));
     col(dx - W / 2, dz - D / 2, dx + W / 2, dz + D / 2);
     col(dx - 0.1, dz - D / 2 - 0.85, dx + 0.5, dz - D / 2 - 0.25);
-    col(r.x0, Z(18.8), r.x0 + 0.78, Z(23.2));
-    col(r.x1 - 0.6, Z(26.0), r.x1, Z(27.3)); col(r.x1 - 0.6, r.z0, r.x1, r.z0 + 0.65);
+    col(r.x0, r.z0, r.x0 + 0.75, Z(23.3)); col(r.x0, Z(23.8), r.x0 + 0.78, Z(27.4));
+    col(r.x1 - 0.6, Z(28.3), r.x1, Z(29.6)); col(r.x1 - 0.6, r.z0, r.x1, r.z0 + 0.65);
   }
 
-  // ================================================================= MEETING ROOM / ADULT CLASS (door on the south wall, plan x 98.7..101.7)
+  // ================================================================= FAMILY BIBLE FELLOWSHIP (adult Bible study) (door on the south wall, plan x 98.7..101.7)
   {
     const r = IN('mtg'), tx = X(93.6), tz = Z(9.0);
     slab(1.0, 0.045, 2.6, 0.14, M.wood, tx, 0.745, tz);
@@ -3193,7 +3162,7 @@ function buildRooms(C) {
     col(r.x1 - 0.65, r.z0, r.x1, r.z0 + 0.65); col(r.x0, r.z1 - 0.65, r.x0 + 0.7, r.z1);
   }
 
-  // ================================================================= CHILDREN'S BATH (door on the east wall, plan y 23..26)
+  // ================================================================= CHILDREN'S BATH (door on the east wall, plan y 30..33)
   {
     const r = IN('childbath');
     bx(0.01, 1.1, r.z1 - r.z0, MAT.tile, r.x0 + 0.005, 0.55, (r.z0 + r.z1) / 2, 0, 0.3);
@@ -3204,14 +3173,14 @@ function buildRooms(C) {
     bx(0.025, 1.2, 1.1, M.wood, tp, 0.75, r.z1 - 0.55, 0, 1.2);
     at(X(94.8), 0, r.z1 - 0.3, PI, () => grabBar(0.7));
     // low vanity on the west wall (north half) with two small vessel sinks and low mirrors
-    const vz = Z(22.5);
+    const vz = Z(23.7);
     at(r.x0 + 0.24, 0, vz, HP, () => vanity(1.4, [-0.35, 0.35], 0.6, 0.48, 0.8));
     for (const dzz of [-0.35, 0.35]) onWall(r, 'w', vz + dzz, 1.15, () => mirrorAt(0.45, 0.62), 0.01);
     at(r.x0 + 0.62, 0, vz, HP, () => { bx(0.4, 0.2, 0.28, MAT.gloss, 0, 0.1, 0, 0x93a98f); bx(0.4, 0.2, 0.14, MAT.gloss, 0, 0.3, -0.07, 0x93a98f); });
-    onWall(r, 'w', Z(25.3), 1.05, towelBox);
+    onWall(r, 'w', Z(26.4), 1.05, towelBox);
     onWall(r, 'n', (r.x0 + r.x1) / 2, 1.25, () => { slab(0.9, 0.55, 0.12, 0.05, MAT.gloss, 0, 0, 0.06, 0xd9d6cf); bx(0.7, 0.02, 0.02, MAT.gloss, 0, -0.18, 0.12, 0x93a98f); });
-    onWall(r, 'w', Z(30.0), 1.4, framePic(C_NUR[2], 0.4, 0.52, M.wood));
-    at(r.x1 - 0.25, 0, Z(33.0), 0, () => trash(0.55, 0.15));
+    onWall(r, 'w', Z(30.5), 1.4, framePic(C_NUR[2], 0.4, 0.52, M.wood));
+    at(r.x1 - 0.25, 0, Z(28.0), 0, () => trash(0.55, 0.15));
     col(t1 - 0.3, r.z1 - 0.7, t2 + 0.3, r.z1);
     col(r.x0, vz - 0.75, r.x0 + 0.85, vz + 0.75);
   }
@@ -3682,7 +3651,7 @@ const AMB_DOLL = { hemiSky: new THREE.Color(0xfff1e0), hemiGround: new THREE.Col
 function setDoll(on) {
   DOLL.on = on; document.body.classList.toggle('dollmode', on); dollBtn.classList.toggle('on', on); dollBtn.setAttribute('aria-pressed', on);
   renderer.clippingPlanes = on ? [CLIP] : [];
-  if (on) { DOLL.yaw = player.yaw + deg(20); toast(COARSE ? 'Drag to turn · pinch to zoom · tap a floor to walk in there' : 'Drag to turn · scroll to zoom · click a floor to walk in there'); }
+  if (on) { DOLL.yaw = player.yaw + deg(20); toast(COARSE ? 'Drag to turn · pinch to zoom · tap a floor to walk in there · floor plan below' : 'Drag to turn · scroll to zoom · click a floor to walk in there · floor plan below'); }
   else { camera.fov = 75; fit(); }
 }
 dollBtn.addEventListener('click', () => setDoll(!DOLL.on));
