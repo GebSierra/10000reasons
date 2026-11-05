@@ -935,7 +935,7 @@ planWall(0, 64.3, 13, 64.3, { h: 'R', gaps: [[4.3, 7.8]] });                    
 planWall(48.67, 0, 48.67, 8.67);                                                    // storage | kitchen north leg
 planWall(57.33, 8.67, 57.33, 29, { h: 'R', gaps: [[16.5, 19.3]] });               // worship | kitchen (door) + coffee bar (solid out to the worship wall)
 planWall(71.42, 0, 71.42, 24.6, { gaps: [[3.8, 6.8]] });                           // kitchen | pastor's office (door), copy, reception
-// office | meeting room: wall removed, the two rooms are open to each other
+planWall(86, 0, 86, 11.4);                                                          // office | meeting room (solid wall)
 planWall(86, 11.4, 86, 18.4);                                                       // copy | meeting room
 planWall(86, 18.4, 86, 36.3);                                                       // reception + fellowship | child bath
 // the short hall is open to the fellowship hall (plan y 36.3 … 40.8); restrooms are entered from their WEST side only
@@ -3552,6 +3552,38 @@ for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) stick.add
 // --- drag to look
 const view = renderer.domElement, look = { id: null, x: 0, y: 0 };
 const tap = { id: null, x: 0, y: 0, t: 0, moved: 0 };
+let lastTap = null;
+// --- double tap to glide (like a Matterport tour): aim at a floor, a doorway or a far wall and you move there
+const GLIDE = { on: false, from: new THREE.Vector3(), to: new THREE.Vector3(), t: 0, dur: 1 };
+const glideRay = new THREE.Raycaster();
+const marker = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.3, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+marker.rotation.x = -Math.PI / 2; marker.renderOrder = 10; marker.raycast = () => {};
+function glideTo(cx, cy) {
+  const r = view.getBoundingClientRect(); ndc.set((cx - r.left) / r.width * 2 - 1, -(cy - r.top) / r.height * 2 + 1);
+  glideRay.setFromCamera(ndc, camera); glideRay.far = 80;
+  const hit = glideRay.intersectObjects(scene.children, true).find(h => h.object.visible && !(h.object.material && (h.object.material.transparent || h.object.material.blending === THREE.AdditiveBlending)));
+  const o = glideRay.ray.origin, d = glideRay.ray.direction;
+  let p;
+  if (hit) p = hit.point.clone();
+  else if (d.y < -0.01) p = o.clone().addScaledVector(d, -o.y / d.y);
+  else return;
+  const flat = new THREE.Vector3(p.x - o.x, 0, p.z - o.z), len = flat.length();
+  if (len < 0.4) return;
+  if (p.y > 0.4) flat.multiplyScalar(Math.max(0, len - 0.7) / len);   // hit a wall or furniture: stop short of it
+  const to = new THREE.Vector3(o.x + flat.x, EYE, o.z + flat.z); collide(to);
+  GLIDE.from.copy(player.pos); GLIDE.to.copy(to); GLIDE.t = 0; GLIDE.dur = clamp(Math.hypot(to.x - player.pos.x, to.z - player.pos.z) / 4.5, 0.45, 2.2); GLIDE.on = true;
+  player.vel.set(0, 0, 0);
+  if (!marker.parent) scene.add(marker); marker.position.set(to.x, 0.04, to.z); marker.material.opacity = 0.85; marker.scale.setScalar(1);
+  interacted();
+}
+function glideStep(dt) {
+  if (marker.material.opacity > 0) { marker.material.opacity = Math.max(0, marker.material.opacity - dt * 0.9); marker.scale.multiplyScalar(1 + dt * 0.6); }
+  if (!GLIDE.on) return false;
+  GLIDE.t = Math.min(1, GLIDE.t + dt / GLIDE.dur); const e = GLIDE.t * GLIDE.t * (3 - 2 * GLIDE.t);
+  player.pos.lerpVectors(GLIDE.from, GLIDE.to, e); if (GLIDE.t >= 1) GLIDE.on = false;
+  camera.position.set(player.pos.x, EYE, player.pos.z); camera.rotation.set(player.pitch, player.yaw, 0);
+  updateZone(dt, player.pos); return true;
+}
 view.addEventListener('pointerdown', e => {
   tap.id = e.pointerId; tap.x = e.clientX; tap.y = e.clientY; tap.t = performance.now(); tap.moved = 0;
   if (look.id !== null) return;
@@ -3561,7 +3593,13 @@ view.addEventListener('pointerdown', e => {
 view.addEventListener('pointermove', e => { if (e.pointerId === tap.id) tap.moved = Math.max(tap.moved, Math.hypot(e.clientX - tap.x, e.clientY - tap.y)); });
 view.addEventListener('pointerup', e => {   // a tap/click (not a drag) on a partition opens or closes it
   if (e.pointerId !== tap.id) return; tap.id = null;
-  if (tap.moved < 8 && performance.now() - tap.t < 450) { if (DOLL.on) dollTap(e.clientX, e.clientY); else togglePartitionAt(e.clientX, e.clientY); }
+  if (!(tap.moved < 8 && performance.now() - tap.t < 450)) return;
+  if (DOLL.on) { dollTap(e.clientX, e.clientY); return; }
+  const now = performance.now(), x = e.clientX, y = e.clientY;
+  if (lastTap && now - lastTap.t < 320 && Math.hypot(x - lastTap.x, y - lastTap.y) < 40) {   // double tap: glide to that spot
+    clearTimeout(lastTap.timer); lastTap = null; glideTo(x, y); return;
+  }
+  lastTap = { t: now, x, y, timer: setTimeout(() => { lastTap = null; togglePartitionAt(x, y); }, 320) };   // single tap waits to rule out a double
 });
 // --- operable partitions
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -3677,8 +3715,8 @@ function dollFrame(dt) {
 }
 if (P.get('doll') === '1') setDoll(true);
 const hint = document.getElementById('hint');
-hint.textContent = COARSE ? 'Drag the joystick to walk · drag anywhere else to look · tap a glass or folding wall to open it'
-                          : 'Joystick or W A S D to walk · drag to look · Shift to run · click a glass or folding wall (or press E) to open it';
+hint.textContent = COARSE ? 'Double tap where you want to go · drag to look · joystick to walk · tap a glass or folding wall to open it'
+                          : 'Double click where you want to go · drag to look · W A S D to walk · click a glass or folding wall (or press E) to open it';
 let hintTimer = setTimeout(() => hint.classList.add('gone'), 12000);
 function interacted() { if (!hint.dataset.t) { hint.dataset.t = 1; clearTimeout(hintTimer); hintTimer = setTimeout(() => hint.classList.add('gone'), 3500); } }
 
@@ -3730,7 +3768,8 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   fpsN++; if (now - fpsT > 1000) { fps = Math.round(fpsN * 1000 / (now - fpsT)); fpsN = 0; fpsT = now; }
   animatePartitions(dt);
-  if (DOLL.on) dollFrame(dt); else walk(dt);
+  if (DOLL.on) dollFrame(dt);
+  else if (!glideStep(dt) || (joy.x || joy.y || keys.size)) { GLIDE.on = false; walk(dt); }
   composer.render();
   window.__rendered = (window.__rendered || 0) + 1;
   requestAnimationFrame(frame);
