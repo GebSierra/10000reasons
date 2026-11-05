@@ -477,7 +477,7 @@ const M = {
   curb: std({ color: 0xbdb6ab, roughness: 0.85 }),
   mulch: std({ color: 0x2c1f18, roughness: 1 }),
   lawn: std({ color: 0x4d6b35, roughness: 1 }),
-  field: std({ color: 0x3c4f2c, roughness: 1 }),
+  field: std({ color: 0x506b3a, roughness: 1 }),
   paint: std({ color: 0xf4f3ee, roughness: 0.6 }),
   fixture: std({ color: 0x1c1b1a, roughness: 0.5, metalness: 0.6 }),
   lampWarm: std({ color: 0xfff2dc, emissive: 0xffc27a, emissiveIntensity: 4 }),
@@ -566,10 +566,19 @@ function plaque(text, x, y, z, rotY = 0) {   // small room-name sign
 
 // ================= SITE =================
 {
-  // church lot only (the rest of the five acres is lawn); x -50..48, z -48..27
-  const LW = 98, LD = 75, g = new THREE.PlaneGeometry(LW, LD); g.rotateX(-Math.PI / 2); g.translate(-1, 0, -10.5);
-  const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * LW / 3.2, uv.getY(i) * LD / 3.2);
-  const ground = new THREE.Mesh(g, M.asphalt); ground.receiveShadow = true; scene.add(ground);
+  // church lot only (the rest of the five acres is lawn): gravel, x -50..48, z -48..14
+  const gravel = (() => {
+    const W = 512, [c, g] = canvas(W, W), img = g.createImageData(W, W), d = img.data;
+    for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
+      const n = fbm(x / 40, y / 40, 3, W / 40), h = hash(x, y), i = (y * W + x) * 4;
+      let v = 112 + n * 40 + (h - 0.5) * 70; if (h > 0.93) v += 45; if (h < 0.06) v -= 40;
+      d[i] = v + 6; d[i + 1] = v + 2; d[i + 2] = v - 6; d[i + 3] = 255;
+    }
+    g.putImageData(img, 0, 0); return std({ map: tex(c), roughness: 1, envMapIntensity: 0.3 });
+  })();
+  const LW = 98, LD = 62, g = new THREE.PlaneGeometry(LW, LD); g.rotateX(-Math.PI / 2); g.translate(-1, 0, -17);
+  const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * LW / 2.4, uv.getY(i) * LD / 2.4);
+  const ground = new THREE.Mesh(g, gravel); ground.receiveShadow = true; scene.add(ground);
   M.field.polygonOffset = true; M.field.polygonOffsetFactor = 4; M.field.polygonOffsetUnits = 4;
   const field = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000, 100, 100), M.field); field.rotation.x = -Math.PI / 2; field.position.y = -0.15; scene.add(field);
 }
@@ -579,12 +588,11 @@ function stripes(x0, z0, n, dx, len) {
     s.position.set(x0 + i * dx, 0.012, z0); s.receiveShadow = true; scene.add(s);
   }
 }
-for (const [x0, n] of [[-46.5, 12], [15.5, 12]]) { stripes(x0, 13.0, n, 2.75, 5.4); stripes(x0, 18.6, n, 2.75, 5.4); }
 
 // ================= NEIGHBOURHOOD: M-62, May St, the shared entrance drive and the gas station next door =================
 // Layout follows the satellite sketch, not to scale: M-62 runs east-west south of the lot, May St north-south to the west,
 // one concrete entrance off M-62 feeds a short access drive west to the gas station and north into the church lot.
-const SITE = { hwZ: 47, hwW: 18, mayX: -128, mayW: 8, entX: -11, accZ0: 27, accZ1: 34 };
+const SITE = { hwZ: 33, hwW: 18, mayX: -128, mayW: 8, entX: -11, accZ0: 14, accZ1: 21 };
 {
   const roadMat = M.asphalt, yellow = std({ color: 0xe2b33a, roughness: 0.6 }), curbM = M.curb;
   const slabAt = (x0, z0, x1, z1, mat, top = 0) => box(x1 - x0, 0.16, z1 - z0, mat, (x0 + x1) / 2, top - 0.08, (z0 + z1) / 2, 3.2);
@@ -620,7 +628,7 @@ const SITE = { hwZ: 47, hwW: 18, mayX: -128, mayW: 8, entX: -11, accZ0: 27, accZ
     }
   }
   // the church lot's entry off the access drive (north side), and a second drive straight to M-62 at the east end (sketch)
-  slabAt(38, accZ1 - 0.01, 47, hz0, roadMat); slabAt(38, 26.9, 47, accZ1, roadMat);
+  slabAt(38, accZ1 - 0.01, 47, hz0, roadMat); slabAt(38, accZ0 - 0.1, 47, accZ1, roadMat);
 }
 
 // ---------- gas station next door: single-storey store (white siding, brick base, gable roof), red-band canopy, pumps.
@@ -628,7 +636,7 @@ const SITE = { hwZ: 47, hwW: 18, mayX: -128, mayW: 8, entX: -11, accZ0: 27, accZ
 {
   const ox = -86, oz = -6;                                         // site centre
   slabMat: {
-    const a = M.asphalt, x0 = -112, x1 = -60, z0 = -44, z1 = 27;
+    const a = M.asphalt, x0 = -112, x1 = -60, z0 = -44, z1 = 14;
     box(x1 - x0, 0.16, z1 - z0, a, (x0 + x1) / 2, -0.08 + 0.002, (z0 + z1) / 2, 3.2);
     box(SITE.mayX + SITE.mayW / 2 + 0.2 - x0 + 0.4, 0.16, 9, a, (x0 + SITE.mayX + SITE.mayW / 2) / 2, -0.078, -2);   // drive to May St
   }
@@ -905,7 +913,7 @@ island(-30, 4.2, -13.5, 8.4); island(13.5, 4.2, 30, 8.4);
 
 // ---------- landscaped berm with trees between the church lot and the gas station lot (driveway shared, lots separate)
 {
-  const bx0 = -60, bx1 = -50, bz0 = -44, bz1 = 26.4, cx = (bx0 + bx1) / 2, L = bz1 - bz0, H = 1.7;
+  const bx0 = -60, bx1 = -50, bz0 = -44, bz1 = 13.4, cx = (bx0 + bx1) / 2, L = bz1 - bz0, H = 1.7;
   const turf = std({ color: 0x46592f, roughness: 1 });
   const g = new THREE.CylinderGeometry(1, 1, L - 6, 24, 1, true, -Math.PI / 2, Math.PI); g.rotateX(Math.PI / 2); g.rotateZ(0);
   const berm = new THREE.Mesh(g, turf); berm.scale.set((bx1 - bx0) / 2, H, 1); berm.position.set(cx, 0, (bz0 + bz1) / 2); berm.receiveShadow = true; scene.add(berm);
@@ -928,15 +936,15 @@ island(-30, 4.2, -13.5, 8.4); island(13.5, 4.2, 30, 8.4);
   const round = new THREE.InstancedMesh(TREE_GEO.farOak, leafMat, n);
   for (let i = 0; i < n; i++) {   // clumped into wood lots rather than scattered evenly
     let a = R(-Math.PI, Math.PI), r = R(150, 260); const h = R(11, 20), w = R(0.85, 1.2);
-    while (Math.abs(Math.sin(a) * r - 47) < 16 || Math.abs(Math.cos(a) * r + 128) < 10) { a = R(-Math.PI, Math.PI); }
+    while (Math.abs(Math.sin(a) * r - 33) < 16 || Math.abs(Math.cos(a) * r + 128) < 10) { a = R(-Math.PI, Math.PI); }
     m4.compose(new THREE.Vector3(Math.cos(a) * r, -0.3, Math.sin(a) * r), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), R(0, 6)), new THREE.Vector3(h * w, h, h * w)); cone.setMatrixAt(i, m4); cone.setColorAt(i, col.setHex(rnd() < 0.5 ? 0x2c4430 : 0x355036));
     let a2 = R(-Math.PI, Math.PI); const r2 = R(140, 250), s = R(10, 17);
-    while (Math.abs(Math.sin(a2) * r2 - 47) < 16 || Math.abs(Math.cos(a2) * r2 + 128) < 10) a2 = R(-Math.PI, Math.PI);
+    while (Math.abs(Math.sin(a2) * r2 - 33) < 16 || Math.abs(Math.cos(a2) * r2 + 128) < 10) a2 = R(-Math.PI, Math.PI);
     m4.compose(new THREE.Vector3(Math.cos(a2) * r2, -0.3, Math.sin(a2) * r2), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), R(0, 6)), new THREE.Vector3(s * R(0.9, 1.4), s, s * R(0.9, 1.4))); round.setMatrixAt(i, m4); round.setColorAt(i, col.setHex([0x3e5530, 0x4a5a2e, 0x5a5a2c, 0x34492a][(rnd() * 4) | 0]));
   }
   scene.add(cone, round);
 }
-for (const [x, z] of [[-40, 16], [-20, 25], [20, 25], [40, 16], [-45, -30], [32, -30]]) {
+for (const [x, z] of [[-40, 11], [-20, 12.5], [20, 12.5], [40, 11], [-45, -30], [32, -30]]) {
   box(0.18, 7.2, 0.18, M.bronze, x, 3.6, z); box(0.9, 0.16, 0.45, M.bronze, x, 7.25, z); box(0.8, 0.02, 0.38, M.lampWarm, x, 7.16, z);
   halo(x, 7.05, z, 1.4, 0.75); pool(x, z, 9, 0.2);
   addCollider(x - 0.2, z - 0.2, x + 0.2, z + 0.2);
@@ -3556,7 +3564,7 @@ composer.addPass(new SMAAPass(innerWidth * renderer.getPixelRatio(), innerHeight
 const LPOOL = [];
 for (let i = 0; i < Q.lights; i++) { const l = new THREE.PointLight(0xffffff, 0, 8, 2); scene.add(l); LPOOL.push(l); }
 const AMB = {
-  out: { hemiSky: new THREE.Color(0x8290c8), hemiGround: new THREE.Color(0x3a322c), hemi: 0.95, env: 0.75, sun: 1.1, fill: 0.4 },
+  out: { hemiSky: new THREE.Color(0x8290c8), hemiGround: new THREE.Color(0x3a322c), hemi: 1.5, env: 1.1, sun: 1.55, fill: 0.7 },   // brightened: lighter dusk outside
   in:  { hemiSky: new THREE.Color(0xffe6cc), hemiGround: new THREE.Color(0xa8947e), hemi: 0.5, env: 0.22, sun: 0.0, fill: 0.0 },   // warm floor bounce lights ceilings
 };
 let curRoom = 'out', lastAssign = -1;
