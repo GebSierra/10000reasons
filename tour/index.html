@@ -73,8 +73,12 @@
 
   #hud { position: fixed; left: 10px; top: 8px; z-index: 3; font: 12px/1.3 system-ui, sans-serif;
          color: #fff; background: rgba(0,0,0,.45); padding: 4px 8px; border-radius: 4px; display: none; }
-  #loading { position: fixed; inset: 0; display: grid; place-items: center; z-index: 5;
-             font-size: 15px; color: #1d3550; background: #b9d8ee; }
+  #loading { position: fixed; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+             font: 600 17px/1.3 system-ui, -apple-system, sans-serif; color: #fff; text-align: center; padding: 24px;
+             background: linear-gradient(rgba(20,27,53,.55), rgba(20,27,53,.75)), url(../stills/01.jpg) center / cover no-repeat, #141B35; }
+  #loading .spin { width: 44px; height: 44px; border-radius: 50%; border: 4px solid rgba(255,255,255,.3); border-top-color: #EA533C; animation: tbcspin .9s linear infinite; }
+  #loading small { font-weight: 400; font-size: 14px; color: #dfe4f0; }
+  @keyframes tbcspin { to { transform: rotate(360deg); } }
   .shot #stick, .shot .chip, .shot #hint { display: none; }
 </style>
 <script type="importmap">
@@ -83,7 +87,7 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
 } }
 </script>
-<div id="loading">Building scene…</div>
+<div id="loading"><div class="spin"></div><div>Loading the 3D tour<br><small>This takes a few seconds.</small></div></div>
 <div id="stick" role="application" aria-label="Movement joystick: drag to walk">
   <div class="base"></div><div class="tick up"></div><div class="tick dn"></div><div class="knob"></div>
 </div>
