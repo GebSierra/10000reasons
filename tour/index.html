@@ -39,6 +39,14 @@
   #home { top: calc(14px + var(--safe-t)); right: calc(14px + var(--safe-r)); }
   #full { top: calc(14px + var(--safe-t)); right: calc(70px + var(--safe-r)); }
   #doll { top: calc(14px + var(--safe-t)); right: calc(126px + var(--safe-r)); }
+  #auto { top: calc(14px + var(--safe-t)); right: calc(182px + var(--safe-r)); }
+  body.touring #stick, body.touring #hint, body.touring #plan { display: none !important; }
+  #fade { position: fixed; inset: 0; z-index: 4; background: #000; opacity: 0; pointer-events: none; transition: opacity .9s ease; }
+  #fade.on { opacity: 1; }
+  #roomcap { position: fixed; z-index: 4; left: calc(24px + var(--safe-l)); bottom: calc(24px + var(--safe-b)); padding: 12px 20px; border-radius: 12px;
+             background: rgba(20,22,26,.5); color: #fff; font: 600 clamp(18px, 2.4vw, 30px)/1.2 system-ui, -apple-system, sans-serif; letter-spacing: .01em;
+             backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; transition: opacity .9s ease; pointer-events: none; }
+  #roomcap.on { opacity: 1; }
   .chip.on { background: rgba(255,255,255,.92); color: #1c1e22; }
   /* one gentle nudge on the dollhouse chip after the tour first opens */
   @keyframes dollNudge { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0); }
@@ -93,6 +101,9 @@
 <button class="chip" id="full" aria-label="Full screen" title="Full screen">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
 </button>
+<button class="chip" id="auto" aria-label="Play guided tour" title="Guided tour: slowly visits every room, on repeat" aria-pressed="false">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+</button>
 <button class="chip" id="doll" aria-label="Dollhouse view" title="Dollhouse view (roof off)" aria-pressed="false">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l9 4.5-9 4.5-9-4.5z" stroke-dasharray="2.2 2"/><path d="M3 11.5l9 4.5 9-4.5M3 11.5v5l9 4.5 9-4.5v-5M12 16v5"/></svg>
 </button>
@@ -100,6 +111,8 @@
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Floor plan
 </a>
 <div id="hint"></div>
+<div id="fade"></div>
+<div id="roomcap"></div>
 <div id="hud"></div>
 
 <script type="module">
@@ -3760,10 +3773,10 @@ const DOLL = { on: false, yaw: deg(-25), pitch: deg(55), dist: 44, t: 0, cx: (BX
 const CLIP = new THREE.Plane(new THREE.Vector3(0, -1, 0), 2.6);
 const dollBtn = document.getElementById('doll'), pinch = new Map();
 const AMB_DOLL = { hemiSky: new THREE.Color(0xfff1e0), hemiGround: new THREE.Color(0x8a7f72), hemi: 0.95, env: 0.55, sun: AMB.out.sun, fill: AMB.out.fill };
-function setDoll(on) {
+function setDoll(on, quiet) {
   DOLL.on = on; document.body.classList.toggle('dollmode', on); dollBtn.classList.toggle('on', on); dollBtn.setAttribute('aria-pressed', on);
   renderer.clippingPlanes = on ? [CLIP] : [];
-  if (on) { DOLL.yaw = player.yaw + deg(20); toast(COARSE ? 'Drag to turn · pinch to zoom · tap a floor to walk in there · floor plan below' : 'Drag to turn · scroll to zoom · click a floor to walk in there · floor plan below'); }
+  if (on && !quiet) { DOLL.yaw = player.yaw + deg(20); toast(COARSE ? 'Drag to turn · pinch to zoom · tap a floor to walk in there · floor plan below' : 'Drag to turn · scroll to zoom · click a floor to walk in there · floor plan below'); }
   else { camera.fov = 75; fit(); }
 }
 dollBtn.addEventListener('click', () => setDoll(!DOLL.on));
@@ -3796,6 +3809,66 @@ function dollFrame(dt) {
   scene.environmentIntensity += (a.env - scene.environmentIntensity) * k; sun.intensity += (a.sun - sun.intensity) * k; fill.intensity += (a.fill - fill.intensity) * k;
   if (performance.now() - lastAssign > 500) { assignLights(new THREE.Vector3(DOLL.cx + 6, EYE, DOLL.cz)); lastAssign = performance.now(); }
 }
+// --- guided tour: fade into each room, take a slow look around, move on; loops forever (lobby display: ?kiosk=1)
+const TOUR = [   // plan feet (x from west wall, y from north wall), facing (deg, 0 = north, 90 = west), sweep (deg), caption
+  { out: true, x: -3, z: 14, yaw: -8.5, sweep: 50, t: 16, cap: 'Trinity Bible Church' },
+  { x: 72, y: 82, yaw: 0, sweep: 110, t: 14, cap: 'Vestibule' },
+  { x: 72, y: 70, yaw: 0, sweep: 230, t: 22, cap: 'Fellowship Hall' },
+  { x: 46, y: 52, yaw: 90, sweep: 170, t: 24, cap: 'Worship / Gym' },
+  { x: 64, y: 20, yaw: 0, sweep: 200, t: 18, cap: 'Kitchen' },
+  { x: 74, y: 30, yaw: 90, sweep: 200, t: 18, cap: 'Bookstore & Reception' },
+  { x: 82.5, y: 13, yaw: 60, sweep: 130, t: 18, cap: "Pastor's Office" },
+  { x: 94, y: 18.5, yaw: 0, sweep: 200, t: 18, cap: 'Family Bible Fellowship' },
+  { x: 116, y: 19, yaw: 0, sweep: 200, t: 18, cap: "Children's Classroom" },
+  { x: 104.5, y: 35.8, yaw: -90, sweep: 100, t: 16, cap: 'Flex Room 1' },
+  { x: 104.5, y: 51, yaw: -90, sweep: 100, t: 16, cap: 'Flex Room 2' },
+  { x: 112, y: 71, yaw: 0, sweep: 200, t: 18, cap: 'Nursery' },
+  { doll: true, t: 28, cap: 'The whole building' },
+];
+const AUTO = { on: false, i: -1, t: 0, kiosk: P.get('kiosk') === '1', fading: false };
+const autoBtn = document.getElementById('auto'), fadeEl = document.getElementById('fade'), capEl = document.getElementById('roomcap');
+const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+function tourGo(i) {
+  AUTO.fading = true; fadeEl.classList.add('on'); capEl.classList.remove('on');
+  setTimeout(() => {
+    if (!AUTO.on) return;
+    AUTO.i = i % TOUR.length; AUTO.t = 0; const s = TOUR[AUTO.i];
+    if (s.doll) { setDoll(true, true); DOLL.dist = 70; DOLL.pitch = deg(38); DOLL.yaw = deg(-30); }
+    else {
+      if (DOLL.on) setDoll(false);
+      const x = s.out ? s.x : px(s.x), z = s.out ? s.z : pz(s.y);
+      player.pos.set(x, EYE, z); player.vel.set(0, 0, 0); player.pitch = deg(-4); player.yaw = deg(s.yaw - s.sweep / 2);
+    }
+    capEl.textContent = s.cap;
+    setTimeout(() => { fadeEl.classList.remove('on'); capEl.classList.add('on'); AUTO.fading = false; }, 150);
+  }, 950);
+}
+function setAuto(on) {
+  AUTO.on = on; document.body.classList.toggle('touring', on); autoBtn.classList.toggle('on', on); autoBtn.setAttribute('aria-pressed', on);
+  if (on) tourGo(AUTO.i + 1);
+  else { fadeEl.classList.remove('on'); capEl.classList.remove('on'); GLIDE.on = false; }
+}
+function autoFrame(dt) {   // returns true while the tour owns the camera
+  if (!AUTO.on || AUTO.i < 0) return false;
+  const s = TOUR[AUTO.i]; AUTO.t += dt; const k = Math.min(1, AUTO.t / s.t);
+  if (s.doll) { DOLL.yaw += dt * (Math.PI * 2 / s.t) * 0.6; dollFrame(dt); }
+  else {
+    player.yaw = deg(s.yaw - s.sweep / 2 + s.sweep * ease(k));
+    player.pitch = deg(-4 + 2 * Math.sin(k * Math.PI));
+    camera.position.set(player.pos.x, EYE, player.pos.z); camera.rotation.set(player.pitch, player.yaw, 0);
+    updateZone(dt, player.pos);
+  }
+  if (k >= 1 && !AUTO.fading) tourGo(AUTO.i + 1);
+  return true;
+}
+autoBtn.addEventListener('click', e => { e.stopPropagation(); setAuto(!AUTO.on); });
+// any touch, click or key hands control back (except on the lobby display)
+const stopAuto = () => { if (AUTO.on && !AUTO.kiosk) { setAuto(false); if (DOLL.on) setDoll(false); } };
+view.addEventListener('pointerdown', stopAuto); document.getElementById('stick').addEventListener('pointerdown', stopAuto);
+addEventListener('keydown', e => { if (e.code !== 'KeyV') stopAuto(); });
+if (P.get('stop')) AUTO.i = +P.get('stop') - 1;   // dev: start the tour at a given stop
+if (AUTO.kiosk) { document.body.classList.add('shot'); setTimeout(() => setAuto(true), 600); }
+
 if (P.get('doll') === '1') { setDoll(true); if (P.get('dd')) DOLL.dist = +P.get('dd'); if (P.get('dy')) DOLL.yaw = deg(+P.get('dy')); }
 const hint = document.getElementById('hint');
 hint.textContent = COARSE ? 'Double tap where you want to go · drag to look · joystick to walk · tap a glass or folding wall to open it'
@@ -3874,7 +3947,8 @@ function frame(now) {
   animatePartitions(dt);
   if (eddyMixer) eddyMixer.update(dt);
   if (eddy) eddy.visible = !DOLL.on;   // only seen by walking into the room
-  if (DOLL.on) dollFrame(dt);
+  if (autoFrame(dt)) {}
+  else if (DOLL.on) dollFrame(dt);
   else if (!glideStep(dt) || (joy.x || joy.y || keys.size)) { GLIDE.on = false; walk(dt); }
   composer.render();
   window.__rendered = (window.__rendered || 0) + 1;
