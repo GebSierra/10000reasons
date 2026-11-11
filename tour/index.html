@@ -47,6 +47,12 @@
              background: rgba(20,22,26,.5); color: #fff; font: 600 clamp(18px, 2.4vw, 30px)/1.2 system-ui, -apple-system, sans-serif; letter-spacing: .01em;
              backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; transition: opacity .9s ease; pointer-events: none; }
   #roomcap.on { opacity: 1; }
+  #pledge { position: fixed; z-index: 4; right: calc(24px + var(--safe-r)); bottom: calc(24px + var(--safe-b)); padding: 12px 20px; border-radius: 12px;
+            background: rgba(234,83,60,.92); color: #fff; font: 600 clamp(14px, 1.7vw, 22px)/1.3 system-ui, -apple-system, sans-serif; text-align: right;
+            display: none; pointer-events: none; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+  #pledge b { display: block; font-weight: 800; }
+  body.touring #pledge { display: block; }
+  @media (max-width: 560px) { #pledge { font-size: 12px; padding: 8px 12px; } #roomcap { font-size: 15px; padding: 8px 12px; bottom: calc(72px + var(--safe-b)); } }
   .chip.on { background: rgba(255,255,255,.92); color: #1c1e22; }
   /* one gentle nudge on the dollhouse chip after the tour first opens */
   @keyframes dollNudge { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0); }
@@ -113,6 +119,7 @@
 <div id="hint"></div>
 <div id="fade"></div>
 <div id="roomcap"></div>
+<div id="pledge">Make a pledge at<b>mytrinitybible.com/10000reasons</b></div>
 <div id="hud"></div>
 
 <script type="module">
