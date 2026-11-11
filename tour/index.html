@@ -2711,7 +2711,7 @@ function buildRooms(C) {
     const [c, g] = canvas(1024, 576);
     const gr = g.createLinearGradient(0, 0, 1024, 576); gr.addColorStop(0, '#2f2621'); gr.addColorStop(1, '#4b3426'); g.fillStyle = gr; g.fillRect(0, 0, 1024, 576);
     g.fillStyle = 'rgba(214,160,96,.9)'; g.fillRect(96, 150, 6, 260); g.fillRect(66, 210, 66, 6);
-    g.fillStyle = '#f6eadb'; g.font = `600 70px ${SERIF}`; g.textBaseline = 'middle'; g.fillText('Adult Bible Class', 170, 230);
+    g.fillStyle = '#f6eadb'; g.font = `600 70px ${SERIF}`; g.textBaseline = 'middle'; g.fillText('Family Bible Fellowship', 170, 230, 800);
     g.fillStyle = '#d9b48a'; g.font = `400 40px ${SANS}`; g.fillText('Romans 8  ·  Sundays 9:30 AM', 172, 320);
     g.fillStyle = 'rgba(246,234,219,.6)'; g.font = `italic 30px ${SERIF}`; g.fillText('"In all things God works for the good of those who love him."', 172, 400, 800);
     return std({ color: 0x000000, emissive: 0xffffff, emissiveMap: tex(c, true, false), emissiveIntensity: 0.85, roughness: 0.2 });
