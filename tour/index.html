@@ -1153,7 +1153,7 @@ const COATS = null;   // coat racks now sit on the fellowship hall's south wall 
   }
   box(0.06, hG, 0.05, M.bronze, x, hG / 2, z1);
   const coll = [x - 0.06, z0, x + 0.06, z1]; COLL.push(coll);
-  registerPartition({
+  const gw = registerPartition({
     name: 'glass wall', meshes, center: new THREE.Vector3(x, 1.5, (z0 + z1) / 2), reach: (z1 - z0) / 2 + 3,
     apply(t) {
       const e = t * t * (3 - 2 * t);
@@ -1162,6 +1162,7 @@ const COATS = null;   // coat racks now sit on the fellowship hall's south wall 
       else { coll[0] = x - 0.06; coll[1] = z0; coll[2] = x + 0.06; coll[3] = z1; }
     },
   });
+  gw.t = gw.target = 1; gw.apply(1);   // starts folded open so visitors can walk between the fellowship hall and the sanctuary
 }
 
 // --- floors and ceilings for every room
